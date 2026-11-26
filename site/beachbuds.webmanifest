@@ -1,6 +1,6 @@
 {
-  "name": "Coast Watch: Branksome, Bournemouth and Poole",
-  "short_name": "Coast Watch",
+  "name": "BeachBuds Alerts: Branksome, Bournemouth and Poole",
+  "short_name": "BeachBuds",
   "description": "Live Wessex Water storm overflow reports for local beaches, with rain and tide context.",
   "lang": "en-GB",
   "start_url": "./?source=homescreen",

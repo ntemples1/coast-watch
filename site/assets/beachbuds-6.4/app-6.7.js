@@ -1,5 +1,5 @@
 'use strict';
-/* Coast Watch v6.1. Live Wessex Water storm overflow reports for Branksome, Bournemouth and Poole,
+/* BeachBuds Alerts. Live Wessex Water storm overflow reports for Branksome, Bournemouth and Poole,
    with Open-Meteo rain, wind and sea context. Static site: every feed below is public, keyless
    and allows browser requests from any origin (CORS *). */
 (function () {
@@ -11,33 +11,59 @@ const FEEDS = {
 };
 const WX_POINT = {latitude: '50.705', longitude: '-1.907', timezone: 'Europe/London', timeformat: 'unixtime'}; // Branksome Chine beach
 const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({...WX_POINT, current: 'temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m', hourly: 'rain,showers,precipitation_probability', daily: 'sunrise,sunset', past_days: '2', forecast_days: '3', wind_speed_unit: 'mph'});
-const MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine?' + new URLSearchParams({...WX_POINT, hourly: 'sea_level_height_msl,wave_height,wave_period,sea_surface_temperature', past_days: '1', forecast_days: '3', cell_selection: 'sea'});
+const MARINE_HOURLY = [
+  'sea_level_height_msl', 'sea_surface_temperature',
+  'wave_height', 'wave_period', 'wave_direction',
+  'swell_wave_height', 'swell_wave_period', 'swell_wave_direction', 'wind_wave_height'
+].join(',');
+const marineUrl = options => 'https://marine-api.open-meteo.com/v1/marine?' + new URLSearchParams({
+  ...WX_POINT, cell_selection: 'sea', ...options
+});
+const MARINE_URL = marineUrl({hourly: MARINE_HOURLY, past_days: '1', forecast_days: '3'});
 const WESSEX_MAP = 'https://www.wessexwater.co.uk/coast-and-rivers-watch-map';
 const HOUR = 3600e3, DAY = 24 * HOUR, STALE_AFTER = 2 * HOUR, REFRESH_MS = 5 * 60e3, WX_REFRESH_MS = 30 * 60e3;
 const HOME_ID = 'WXW00865', HOME_BEACH = 'branksome';
 const STORE_KEY = 'coast-watch.v6', OLD_KEY = 'coast-watch.preferences.v2', MOTION_KEY = 'coast-watch.motion-paused';
 
-// Beaches west to east, then harbour. Each lists its nearest monitored outfalls.
+// A named outfall drives its own card colour. The outfalls list supplies nearby context.
+// bw lists the official EA bathing water id(s) for each beach (see assets/js/bathing.js). Empty bw = not designated.
 const BEACHES = [
-  {id:'sandbanks', name:'Sandbanks', lat:50.6858, lon:-1.9445, water:'sea', outfalls:['WXW00955']},
-  {id:'shore-road', name:'Shore Road', lat:50.6928, lon:-1.9285, water:'sea', outfalls:['WXW00991','WXW00955']},
-  {id:'canford-cliffs', name:'Canford Cliffs', lat:50.6992, lon:-1.9168, water:'sea', outfalls:['WXW00991','WXW00865']},
-  {id:'branksome', name:'Branksome Chine', lat:50.7047, lon:-1.9068, water:'sea', outfalls:['WXW00865']},
-  {id:'alum', name:'Alum Chine', lat:50.7104, lon:-1.8962, water:'sea', outfalls:['WXW00865','WXW00155']},
-  {id:'durley', name:'Durley Chine', lat:50.7138, lon:-1.8842, water:'sea', outfalls:['WXW00155','WXW00865']},
-  {id:'bournemouth-pier', name:'Bournemouth Pier', lat:50.7156, lon:-1.8752, water:'sea', outfalls:['WXW00155','WXW00153']},
-  {id:'boscombe', name:'Boscombe Pier', lat:50.7196, lon:-1.8436, water:'sea', outfalls:['WXW00153','WXW00155']},
-  {id:'fishermans', name:'Fisherman’s Walk', lat:50.7206, lon:-1.8170, water:'sea', outfalls:['WXW00429','WXW00153']},
-  {id:'southbourne', name:'Southbourne', lat:50.7199, lon:-1.7950, water:'sea', outfalls:['WXW00429','WXW00521']},
-  {id:'hengistbury', name:'Hengistbury Head', lat:50.7142, lon:-1.7655, water:'sea', outfalls:['WXW00521']},
-  {id:'evening-hill', name:'Evening Hill, Lilliput', lat:50.7030, lon:-1.9478, water:'harbour', outfalls:['WSX1292','WSX10118','WXW00955']},
-  {id:'baiter', name:'Whitecliff and Baiter', lat:50.7128, lon:-1.9655, water:'harbour', outfalls:['WSX10143','WXW00396']},
-  {id:'poole-quay', name:'Poole Quay', lat:50.7118, lon:-1.9855, water:'harbour', outfalls:['WXW00396','WXW00866','WSX10060']},
-  {id:'hamworthy', name:'Hamworthy and Rockley', lat:50.7080, lon:-2.0095, water:'harbour', outfalls:['WSX10058','WSX10057']}
+  {id:'sandbanks', name:'Sandbanks', lat:50.6858, lon:-1.9445, water:'sea', outfalls:['WXW00991','WXW00955'], bw:['ukk2102-19350']},
+  {id:'shore-road', outfall:'WXW00991', name:'Shore Road', lat:50.6928, lon:-1.9285, water:'sea', outfalls:['WXW00991','WXW00955'], bw:['ukk2102-19200']},
+  {id:'canford-cliffs', name:'Canford Cliffs', lat:50.6992, lon:-1.9168, water:'sea', outfalls:['WXW00991','WXW00865'], bw:['ukk2102-19190']},
+  {id:'branksome', outfall:'WXW00865', name:'Branksome Chine', lat:50.7047, lon:-1.9068, water:'sea', outfalls:['WXW00865'], bw:['ukk2102-19170']},
+  {id:'alum', name:'Alum Chine', lat:50.7104, lon:-1.8962, water:'sea', outfalls:['WXW00865','WXW00155'], bw:['ukk2101-19160']},
+  {id:'durley', name:'Durley Chine', lat:50.7138, lon:-1.8842, water:'sea', outfalls:['WXW00155','WXW00865'], bw:['ukk2101-19150']},
+  {id:'bournemouth-pier', outfall:'WXW00155', name:'Bournemouth Pier', lat:50.7156, lon:-1.8752, water:'sea', outfalls:['WXW00155','WXW00153'], bw:['ukk2101-19100']},
+  {id:'boscombe', outfall:'WXW00153', name:'Boscombe Pier', lat:50.7196, lon:-1.8436, water:'sea', outfalls:['WXW00153','WXW00155'], bw:['ukk2101-19060']},
+  {id:'fishermans', outfall:'WXW00429', name:'Fisherman’s Walk', lat:50.7206, lon:-1.8170, water:'sea', outfalls:['WXW00429','WXW00153'], bw:['ukk2101-19030']},
+  {id:'southbourne', name:'Southbourne', lat:50.7199, lon:-1.7950, water:'sea', outfalls:['WXW00429','WXW00521'], bw:['ukk2101-19020']},
+  {id:'hengistbury', outfall:'WXW00521', name:'Hengistbury Head', lat:50.7142, lon:-1.7655, water:'sea', outfalls:['WXW00521'], bw:['ukk2101-19000']},
+  {id:'evening-hill', outfall:'WSX1292', name:'Evening Hill, Lilliput', lat:50.7030, lon:-1.9478, water:'harbour', outfalls:['WSX1292','WSX10118','WXW00955'], bw:[]},
+  {id:'baiter', outfall:'WSX10143', name:'Whitecliff and Baiter', lat:50.7128, lon:-1.9655, water:'harbour', outfalls:['WSX10143','WXW00396'], bw:[]},
+  {id:'poole-quay', outfall:'WXW00866', name:'Poole Quay', lat:50.7118, lon:-1.9855, water:'harbour', outfalls:['WXW00396','WXW00866','WSX10060'], bw:[]},
+  {id:'hamworthy', outfall:'WSX10057', name:'Hamworthy and Rockley', lat:50.7080, lon:-2.0095, water:'harbour', outfalls:['WSX10058','WSX10057'], bw:['ukk2102-19400','ukk2102-19450']}
 ];
+const OUTLOOK_SPOTS = [
+  ...[HOME_BEACH, 'sandbanks', 'bournemouth-pier', 'boscombe', 'southbourne'].map(id => BEACHES.find(beach => beach.id === id)),
+  {name: 'Avon Beach', lat: 50.727, lon: -1.732}
+];
+const OUTLOOK_DAYS = 8;
+const OUTLOOK_LOCATIONS = {
+  latitude: OUTLOOK_SPOTS.map(spot => spot.lat).join(','),
+  longitude: OUTLOOK_SPOTS.map(spot => spot.lon).join(','),
+  forecast_days: String(OUTLOOK_DAYS)
+};
+const OUTLOOK_URL = marineUrl({
+  ...OUTLOOK_LOCATIONS,
+  hourly: 'wave_height,swell_wave_height,swell_wave_period,swell_wave_direction',
+});
+const OUTLOOK_WIND_URL = 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
+  ...WX_POINT, ...OUTLOOK_LOCATIONS, hourly: 'wind_speed_10m,wind_direction_10m', wind_speed_unit: 'mph'
+});
 const ALIASES = {WXW00865:'Branksome Chine', WXW00155:'Bournemouth Pier (No 1)', WXW00153:'Boscombe (No 1)', WXW00429:'Fisherman’s Walk', WXW00521:'Southbourne, Hengistbury Head', WXW00991:'Shore Road', WXW00955:'Sandbanks Pavilion'};
 const KIND_ORDER = {active:0, unknown:1, recent:2, quiet:3};
-const KIND_LABEL = {active:'Discharging', recent:'Ended in last 24h', quiet:'Not discharging', unknown:'Unavailable'};
+const KIND_LABEL = {nearby:'Nearby reports only', active:'Discharging', recent:'Ended in last 24h', quiet:'Not discharging', unknown:'Unavailable'};
 const COLOURS = {active:'#ff6b6f', recent:'#f5b041', quiet:'#4fc9a4', unknown:'#a3a8bd'};
 
 // ---------- helpers ----------
@@ -179,12 +205,17 @@ async function refreshOutfalls() {
   }
 }
 
+async function getConditionJSON(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try { return await getJSON(url, controller.signal); }
+  finally { clearTimeout(timer); }
+}
 async function refreshConditions() {
   if (wxBusy) return; wxBusy = true; $('conditions-refresh').disabled = true;
-  const get = async url => { const c = new AbortController(), t = setTimeout(() => c.abort(), 15000); try { return await getJSON(url, c.signal); } finally { clearTimeout(t); } };
   await Promise.allSettled([
-    get(WEATHER_URL).then(d => { if (!d.hourly || !Array.isArray(d.hourly.time)) throw new Error('No hourly data'); weather = d; weatherAt = Date.now(); weatherFailed = false; }).catch(() => { weatherFailed = true; }),
-    get(MARINE_URL).then(d => { if (!finite(d.latitude) || !finite(d.longitude)) throw new Error('No model location'); marine = d; marineAt = Date.now(); marineFailed = false; }).catch(() => { marineFailed = true; })
+    getConditionJSON(WEATHER_URL).then(d => { if (!d.hourly || !Array.isArray(d.hourly.time)) throw new Error('No hourly data'); weather = d; weatherAt = Date.now(); weatherFailed = false; }).catch(() => { weatherFailed = true; }),
+    getConditionJSON(MARINE_URL).then(d => { if (!finite(d.latitude) || !finite(d.longitude)) throw new Error('No model location'); marine = d; marineAt = Date.now(); marineFailed = false; }).catch(() => { marineFailed = true; })
   ]);
   wxBusy = false; $('conditions-refresh').disabled = false; renderAll();
 }
@@ -206,9 +237,24 @@ function rainWindow(hours, future = false) {
 }
 function rainWord(mm) { if (!finite(mm)) return null; return mm < 0.2 ? 'dry' : mm < 2 ? 'light rain' : mm < 10 ? 'moderate rain' : 'heavy rain'; }
 const compass = d => finite(d) ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(((d % 360) + 360) % 360 / 22.5) % 16] : null;
+function marineHours(h = marine.hourly) {
+  if (!Array.isArray(h?.time)) return [];
+  return h.time.map((t, i) => ({
+    time: t * 1000,
+    level: h.sea_level_height_msl?.[i],
+    temperature: h.sea_surface_temperature?.[i],
+    wave: h.wave_height?.[i],
+    period: h.wave_period?.[i],
+    direction: h.wave_direction?.[i],
+    swell: h.swell_wave_height?.[i],
+    swellPeriod: h.swell_wave_period?.[i],
+    swellDirection: h.swell_wave_direction?.[i],
+    chop: h.wind_wave_height?.[i]
+  }));
+}
 function marineWindow() {
-  const h = marine.hourly || {}, now = Date.now(), boundary = Math.floor(now / HOUR) * HOUR;
-  const rows = (h.time || []).map((t, i) => ({time: t * 1000, level: h.sea_level_height_msl?.[i], wave: h.wave_height?.[i], period: h.wave_period?.[i], temperature: h.sea_surface_temperature?.[i]}));
+  const boundary = Math.floor(Date.now() / HOUR) * HOUR;
+  const rows = marineHours();
   const current = rows.find(r => r.time === boundary);
   const chart = rows.filter(r => r.time >= boundary && r.time <= boundary + DAY);
   const complete = chart.length === 25 && chart.every((r, i) => finite(r.level) && (!i || r.time - chart[i - 1].time === HOUR));
@@ -222,7 +268,7 @@ function marineWindow() {
 function dischargeStrip(rs, {ticks = false} = {}) {
   const now = Date.now(), start = now - DAY, wrap = el('div', 'tl');
   const bar = el('div', 'tl-bar'); wrap.append(bar);
-  if (!checkedAt) { bar.classList.add('na'); return wrap; }
+  if (!checkedAt) { bar.classList.add('na'); bar.setAttribute('role', 'img'); bar.setAttribute('aria-label', 'Checking 24-hour discharge history'); return wrap; }
   if (!historyOk) { bar.classList.add('na'); bar.setAttribute('role', 'img'); bar.setAttribute('aria-label', '24-hour history unavailable'); wrap.append(el('span', 'fine', '24h history unavailable. This is not an all-clear.')); return wrap; }
   let n = 0;
   const place = (a, b, cls, title) => { const i = el('i', cls); i.style.left = `${((a - start) / DAY) * 100}%`; i.style.width = `max(3px, ${((b - a) / DAY) * 100}%)`; i.title = title; bar.append(i); n++; };
@@ -233,7 +279,7 @@ function dischargeStrip(rs, {ticks = false} = {}) {
       if ((end ?? e.start) < start) continue;
       place(Math.max(e.start, start), Math.min(end ?? e.start, now), e.end == null ? (active ? 'open' : 'unresolved') : '', `${nameOf(r)}: ${when(e.start)} to ${e.end ? when(e.end) : active ? 'now, ongoing' : 'end not reported'}`);
     }
-    if (active && !eventsFor(r).some(e => e.end == null)) place(Math.max(lastStart(r) || now - HOUR, start), now, 'open', `${nameOf(r)}: discharging now`);
+    if (active && lastStart(r) && !eventsFor(r).some(e => e.end == null)) place(Math.max(lastStart(r), start), now, 'open', `${nameOf(r)}: discharging now`);
   }
   bar.setAttribute('role', 'img');
   bar.setAttribute('aria-label', n ? `${n} reported discharge${n > 1 ? 's' : ''} in the last 24 hours` : 'No published discharges in the last 24 hours');
@@ -260,12 +306,11 @@ function rainStrip() {
 }
 
 // ---------- derived ----------
-function beachSummary(b) {
-  const rs = b.outfalls.map(record), ss = rs.map(r => statusOf(r));
-  const worst = ss.reduce((w, s) => KIND_ORDER[s.kind] < KIND_ORDER[w.kind] ? s : w, {kind: 'quiet'});
-  const ends = rs.filter(r => isTime(r.LatestEventEnd));
-  const lastBy = ends.sort((a, b) => b.LatestEventEnd - a.LatestEventEnd)[0] || null;
-  return {rs, ss, worst: checkedAt ? worst : statusOf(null), lastEnd: lastBy ? lastBy.LatestEventEnd : null, lastBy, active: rs.filter((r, i) => ss[i].kind === 'active')};
+function beachSummary(beach) {
+  const local = beach.outfall ? record(beach.outfall) : null;
+  const status = beach.outfall ? statusOf(local) : {kind: 'nearby', label: KIND_LABEL.nearby};
+  const nearby = beach.outfalls.filter(id => id !== beach.outfall).map(id => ({id, report: record(id)}));
+  return {local, status, nearby};
 }
 function counts() { const c = {active: 0, recent: 0, quiet: 0, unknown: 0}; for (const r of outfalls.values()) c[statusOf(r).kind]++; return c; }
 
@@ -293,13 +338,6 @@ function renderHome() {
     s.kind === 'active' ? `${headline(r, s)}. The latest Wessex report says this outfall is discharging.` :
     s.kind === 'unknown' ? `${s.label}. Branksome’s current status cannot be confirmed, so do not read this as an all-clear.` :
     s.kind === 'recent' ? `Not discharging now. A discharge ended ${ago(Date.now() - r.LatestEventEnd)} ago.` : 'The latest source report says this outfall is not discharging.';
-  // If another outfall listed on the Branksome beach card is in a worse state, say so.
-  const beach = beachSummary(BEACHES.find(b => b.id === HOME_BEACH)), near = $('home-nearby');
-  near.hidden = !checkedAt || KIND_ORDER[beach.worst.kind] >= KIND_ORDER[s.kind];
-  if (!near.hidden) {
-    const other = beach.rs.find((x, i) => x.id !== HOME_ID && beach.ss[i].kind === beach.worst.kind);
-    near.replaceChildren(badge(beach.worst.kind, `Nearby: ${nameOf(other)}`), document.createTextNode(' ' + headline(other)));
-  }
   const strip = $('home-strip'); strip.replaceChildren(el('p', 'strip-label', 'Last 24h · discharges'), dischargeStrip([r]), el('p', 'strip-label', 'Rain at Branksome (model)'), rainStrip(), tickRow(Date.now()));
   const end = isTime(r.LatestEventEnd) ? r.LatestEventEnd : null, st = lastStart(r);
   $('home-stop').textContent = !checkedAt ? '…' : s.kind === 'active' ? 'Ongoing' : end ? `${ago(Date.now() - end)} ago` : 'Not supplied';
@@ -311,6 +349,8 @@ function renderHome() {
   $('home-updated').textContent = checkedAt && isTime(r.LastUpdated) ? `${ago(Date.now() - r.LastUpdated)} ago` : '…';
   $('home-updated-date').textContent = checkedAt && isTime(r.LastUpdated) ? fmtFull.format(r.LastUpdated) : 'Checked every 5 minutes';
   starSync(document.querySelector('[data-save-beach=branksome]'), saved.beaches.has(HOME_BEACH), 'Save', 'Saved');
+  renderHomeSun();
+  renderHomeBathing();
 
   // Whole-area summary
   const c = counts();
@@ -330,24 +370,15 @@ function renderHome() {
   const r48 = rainWindow(48), rNext = rainWindow(12, true);
   const rc = $('rain-context');
   if (!weatherFresh()) rc.textContent = weatherFailed ? 'Rain data is unavailable right now.' : 'Loading rainfall…';
-  else {
-    const parts = [`Last 24h: ${num(r24, 'mm')}${finite(r24) ? ` (${rainWord(r24)})` : ''}.`, `Last 48h: ${num(r48, 'mm')}.`, `Next 12h forecast: ${num(rNext, 'mm')}.`];
-    if (checkedAt) {
-      const recentOrActive = c.active + c.recent;
-      if (recentOrActive && finite(r48) && r48 >= 2) parts.push(`${recentOrActive} local outfall${recentOrActive > 1 ? 's have' : ' has'} reported a discharge in the last 24h, after recent rain.`);
-      else if (recentOrActive) parts.push(`${recentOrActive} local outfall${recentOrActive > 1 ? 's have' : ' has'} reported a discharge in the last 24h, even though modelled rain was light.`);
-      else if (finite(r48) && r48 >= 10) parts.push('No discharges reported in the last 24h despite heavy rain. Reports can lag, so keep checking.');
-      if (finite(rNext) && rNext >= 5) parts.push('More rain is forecast, which is when overflows usually operate.');
-    }
-    rc.textContent = parts.join(' ');
-  }
-  const mini = $('rain-mini'); mini.replaceChildren(el('p', 'strip-label', 'Rain, last 24h · hourly'), rainStrip(), tickRow(Date.now()));
+  else rc.textContent = `Last 48h: ${num(r48, 'mm')} estimated at Branksome. Next 12h forecast: ${num(rNext, 'mm')}.`;
 
   // Your beaches: Branksome plus saved
   const mine = BEACHES.filter(b => b.id === HOME_BEACH || saved.beaches.has(b.id));
   const box = $('my-beaches'); box.replaceChildren(...mine.map(beachCard));
   if (mine.length === 1) box.append(el('p', 'fine', 'Save more beaches from the Beaches tab and they will appear here.'));
   renderMoon();
+  renderWaveForecast();
+  renderWaveOutlook();
 }
 
 function starSync(btn, on, offText, onText) { if (!btn) return; btn.textContent = on ? `★ ${onText}` : `☆ ${offText}`; btn.setAttribute('aria-pressed', String(on)); btn.classList.toggle('on', on); }
@@ -358,32 +389,133 @@ function starButton(set, id, label) {
   return b;
 }
 
+// ---------- official bathing water (Environment Agency), static snapshot in bathing.js ----------
+// The EA API blocks browser requests from other sites, so classifications are a yearly snapshot
+// and daily pollution risk forecasts are linked out to Swimfo rather than shown as a status here.
+const BW = (window.CW_BATHING && window.CW_BATHING.sites) ? window.CW_BATHING : {snapshot: null, sites: {}};
+const SWIMFO = id => `https://environment.data.gov.uk/bwq/profiles/profile.html?site=${encodeURIComponent(id)}`;
+const BW_CLASSES = ['Excellent', 'Good', 'Sufficient', 'Poor'];
+const fmtLongDay = new Intl.DateTimeFormat('en-GB', {...TZ, day: 'numeric', month: 'long', year: 'numeric'});
+function bathingSeason(at = Date.now()) {
+  const iso = fmtIsoDay.format(at), md = iso.slice(5), year = +iso.slice(0, 4);
+  const inSeason = md >= '05-15' && md <= '09-30';
+  return {inSeason, nextStart: `15 May ${md > '09-30' ? year + 1 : year}`};
+}
+function bwSite(id) { return BW.sites[id] || null; }
+function bwYears(s) { return Object.keys((s && s.classes) || {}).filter(y => /^\d{4}$/.test(y)).sort(); }
+function bwLatest(id) {
+  const s = bwSite(id), year = bwYears(s).pop(), cls = year && s.classes[year];
+  return BW_CLASSES.includes(cls) ? {year, cls} : null;
+}
+function bwBadge(cls) { const ok = BW_CLASSES.includes(cls); return el('span', `bwq ${ok ? cls.toLowerCase() : 'none'}`, ok ? cls : 'Unavailable'); }
+function bwShortName(s) { return s.name.replace(/^(Poole Harbour|Poole|Bournemouth) /, ''); }
+function bathingLine(b) {
+  const p = el('p', 'card-bw');
+  if (!b.bw || !b.bw.length) { p.append(el('span', 'muted', 'Not an official bathing water, so no EA rating')); return p; }
+  const parts = b.bw.map(id => ({s: bwSite(id), l: bwLatest(id)}));
+  const year = parts.map(x => x.l && x.l.year).filter(Boolean).sort().pop();
+  p.append(el('span', 'muted', `EA water quality${year ? ` ${year}` : ''}:`));
+  for (const x of parts) {
+    p.append(document.createTextNode(' '));
+    if (parts.length > 1 && x.s) p.append(el('span', 'muted', bwShortName(x.s) + ' '));
+    p.append(bwBadge(x.l && x.l.cls));
+  }
+  return p;
+}
+function seasonNote(id) {
+  const season = bathingSeason(), p = el('p', 'fine');
+  const a = el('a', '', season.inSeason ? 'Check today’s pollution risk forecast on Swimfo ↗' : 'Full EA profile on Swimfo ↗');
+  a.href = SWIMFO(id); a.target = '_blank'; a.rel = 'noopener';
+  p.append(document.createTextNode(season.inSeason ?
+    'The EA publishes a daily pollution risk forecast here in the bathing season. Coast Watch cannot read it directly. ' :
+    `Daily pollution risk forecasts run 15 May to 30 September. Next season starts ${season.nextStart}. `), a);
+  return p;
+}
+function bwRow(id) {
+  const s = bwSite(id), l = bwLatest(id), row = el('div', 'bw-row');
+  if (!s) { row.append(el('span', 'mini-name', id), bwBadge(null)); return row; }
+  row.append(el('span', 'mini-name', s.name), bwBadge(l && l.cls));
+  const years = bwYears(s);
+  if (years.length) {
+    const h = el('span', 'bw-hist'); h.setAttribute('aria-label', 'Rating by year: ' + years.map(y => `${y} ${s.classes[y]}`).join(', '));
+    for (const y of years) {
+      const c = s.classes[y], chip = el('span', `bw-chip ${BW_CLASSES.includes(c) ? c.toLowerCase() : 'none'}`, `’${y.slice(2)}`);
+      chip.title = `${y}: ${c}`; chip.setAttribute('aria-hidden', 'true'); h.append(chip);
+    }
+    row.append(h);
+  }
+  return row;
+}
+const BW_FOOT = () => `Yearly rating from the last four seasons of EA samples, not a reading for today. Snapshot taken ${BW.snapshot ? fmtLongDay.format(new Date(BW.snapshot + 'T12:00:00Z')) : 'on an unknown date'}.`;
+function bathingMore(b) {
+  const box = el('div', 'bw-more');
+  box.append(el('p', 'more-label', 'Official bathing water · Environment Agency'));
+  if (!b.bw || !b.bw.length) {
+    box.append(el('p', 'fine', 'This spot is not a designated bathing water, so the EA does not sample, rate or forecast it. The outfall reports above still apply.'));
+    return box;
+  }
+  for (const id of b.bw) {
+    box.append(bwRow(id));
+    if (bwSite(id)?.rainWarning) box.append(el('p', 'fine bw-rain', 'The EA says water quality here can drop after heavy rain.'));
+    box.append(seasonNote(id));
+  }
+  box.append(el('p', 'fine', BW_FOOT()));
+  return box;
+}
+function renderHomeBathing() {
+  const box = $('home-bathing'); if (!box) return;
+  const b = BEACHES.find(x => x.id === HOME_BEACH), id = b.bw[0], l = bwLatest(id), season = bathingSeason();
+  const head = el('div', 'bw-head');
+  head.append(el('h2', 'h3', 'Official bathing water'), bwBadge(l && l.cls));
+  box.replaceChildren(head,
+    el('p', 'muted', l ? `The Environment Agency rates Branksome Chine ${l.cls} for ${l.year}.` : 'The Environment Agency rating for Branksome Chine is unavailable.'),
+    bwRow(id), seasonNote(id),
+    el('p', 'fine', (season.inSeason ? '' : 'Out of season the EA does not sample or forecast. ') + 'A good yearly rating does not rule out pollution after rain or an overflow discharge. ' + BW_FOOT()));
+}
+
 // ---------- beach cards ----------
 function beachCard(b) {
-  const sum = beachSummary(b), kind = sum.worst.kind, key = 'b:' + b.id;
+  const {local, status, nearby} = beachSummary(b), {kind} = status, key = 'b:' + b.id;
   const card = el('details', `card beach ${kind}`); card.dataset.beach = b.id; card.open = state.open === key;
   card.addEventListener('toggle', () => { if (card.open) state.open = key; else if (state.open === key) state.open = null; });
   const sm = el('summary'), head = el('div', 'card-head'), title = el('div', 'card-title');
   title.append(el('h3', '', b.name)); if (b.id === HOME_BEACH) title.append(el('span', 'pin', 'Pinned'));
   head.append(title, starButton('beaches', b.id, b.name));
-  let line, sub = '';
-  if (!checkedAt) line = lastError ? 'Live data unavailable' : 'Checking…';
-  else if (kind === 'active') { line = 'Discharging nearby now'; sub = sum.active.map(r => `${nameOf(r)}: ${headline(r).toLowerCase()}`).join(' · '); }
-  else if (kind === 'unknown') { line = 'Cannot confirm, monitor data unavailable'; sub = sum.rs.map((r, i) => `${nameOf(r)}: ${sum.ss[i].label}`).join(' · '); }
-  else if (kind === 'recent') { line = `Nearby discharge ended ${ago(Date.now() - sum.lastEnd)} ago`; sub = `${nameOf(sum.lastBy)}, ${when(sum.lastEnd)}. Nothing reported discharging now.`; }
-  else { line = 'No discharge reported in last 24h'; sub = sum.lastEnd ? `Last nearby discharge ended ${ago(Date.now() - sum.lastEnd)} ago (${nameOf(sum.lastBy)}, ${fmtDay.format(sum.lastEnd)})` : 'No previous discharge time supplied'; }
   const body = el('div', 'card-body');
-  body.append(badge(kind, checkedAt ? undefined : (lastError ? 'Unavailable' : 'Checking')), el('p', 'card-line', line));
-  if (sub) body.append(el('p', 'card-sub', sub));
-  body.append(el('p', 'strip-label', 'Last 24h'), dischargeStrip(sum.rs));
+  body.append(badge(kind, kind === 'nearby' || checkedAt ? status.label : (lastError ? 'Unavailable' : 'Checking')));
+  if (local) {
+    const start = lastStart(local), stop = isTime(local.LatestEventEnd) ? local.LatestEventEnd : null;
+    const line = !checkedAt ? (lastError ? 'Live data unavailable' : 'Checking…') :
+      kind === 'active' ? 'Reported discharging now' :
+      kind === 'unknown' ? 'Current report unavailable' :
+      kind === 'recent' ? `Discharge ended ${ago(Date.now() - stop)} ago` : 'No discharge reported in the last 24h';
+    body.append(el('p', 'card-line', line));
+    if (checkedAt) {
+      const time = kind === 'active' ? (start ? `Started ${when(start)}` : 'Start time unavailable') :
+        stop ? `Last reported stop: ${when(stop)}` : 'No previous stop time supplied';
+      body.append(el('p', 'card-sub', `${nameOf(local)} · ${time}`));
+    }
+    body.append(el('p', 'strip-label', 'This outfall · last 24h'), dischargeStrip([local]));
+  } else {
+    body.append(el('p', 'card-line', 'No named outfall for this beach'));
+  }
+  if (nearby.length) {
+    const nearbyReport = nearby.filter(({report}) => ['active','recent'].includes(statusOf(report).kind))
+      .sort((a, c) => KIND_ORDER[statusOf(a.report).kind] - KIND_ORDER[statusOf(c.report).kind])[0]?.report;
+    const note = nearbyReport ? `Nearby: ${nameOf(nearbyReport)} · ${statusOf(nearbyReport).label.toLowerCase()}` :
+      'Open for nearby outfall reports';
+    body.append(el('p', 'card-sub nearby-note', note));
+  }
+  body.append(bathingLine(b));
   sm.append(head, body); card.append(sm);
   const more = el('div', 'card-more');
-  more.append(el('p', 'more-label', 'Nearest monitored outfalls'));
-  for (const id of b.outfalls) {
+  more.append(el('p', 'more-label', 'Outfall reports'));
+  for (const id of [...new Set([b.outfall, ...b.outfalls].filter(Boolean))]) {
     const r = record(id), s = statusOf(r), a = el('a', 'mini'); a.href = `#view=history&place=${id}`;
     a.append(el('span', 'mini-name', nameOf(r)), badge(s.kind, s.label), el('span', 'mini-text', headline(r, s)));
     more.append(a);
   }
+  more.append(bathingMore(b));
   const acts = el('div', 'actions');
   const m = el('a', 'btn small', 'Show on map'); m.href = `#view=map&beach=${b.id}`;
   const share = el('button', 'btn small ghost', 'Copy link'); share.type = 'button'; share.addEventListener('click', () => copyLink(`view=beaches&beach=${b.id}`));
@@ -542,14 +674,40 @@ function moonLitPath(cx, cy, r, frac) {
   const term = c > 0 ? (waxing ? 0 : 1) : (waxing ? 1 : 0);
   return `M ${cx} ${cy - r} A ${r} ${r} 0 0 ${limb} ${cx} ${cy + r} A ${rx} ${r} 0 0 ${term} ${cx} ${cy - r} Z`;
 }
-function moonSvg(frac, label) {
+function moonSvg(frac, label, photoId) {
   const s = svg('svg', {viewBox: '0 0 100 100'});
   if (label) { s.setAttribute('role', 'img'); s.setAttribute('aria-label', label); }
   else s.setAttribute('aria-hidden', 'true');
   const cx = 50, cy = 50, r = 44, f = ((frac % 1) + 1) % 1;
+  const full = Math.abs(f - 0.5) < 0.001;
+  const crescent = full ? '' : moonLitPath(cx, cy, r, f);
+  const shape = () => full ? svg('circle', {cx, cy, r}) : svg('path', {d: crescent});
   s.append(svg('circle', {cx, cy, r, class: 'moon-unlit'}));
-  if (Math.abs(f - 0.5) < 0.001) s.append(svg('circle', {cx, cy, r, class: 'moon-lit'}));
-  else { const d = moonLitPath(cx, cy, r, f); if (d) s.append(svg('path', {d, class: 'moon-lit'})); }
+  if (photoId) {
+    const diskId = `moon-disk-${photoId}`;
+    const litId = `moon-lit-${photoId}`;
+    const diskClip = svg('clipPath', {id: diskId});
+    diskClip.append(svg('circle', {cx, cy, r}));
+    s.append(diskClip);
+    s.append(svg('image', {
+      href: 'assets/beachbuds-6.4/moon-nasa.jpg', x: 4, y: 4, width: 92, height: 92,
+      'clip-path': `url(#${diskId})`, class: 'moon-photo-shadow'
+    }));
+    if (full || crescent) {
+      const fill = shape();
+      fill.setAttribute('class', 'moon-lit');
+      const clip = svg('clipPath', {id: litId});
+      clip.append(shape());
+      s.append(fill, clip, svg('image', {
+        href: 'assets/beachbuds-6.4/moon-nasa.jpg', x: 4, y: 4, width: 92, height: 92,
+        'clip-path': `url(#${litId})`, class: 'moon-photo-light'
+      }));
+    }
+  } else if (full || crescent) {
+    const fill = shape();
+    fill.setAttribute('class', 'moon-lit');
+    s.append(fill);
+  }
   s.append(svg('circle', {cx, cy, r, class: 'moon-rim'}));
   return s;
 }
@@ -557,7 +715,7 @@ function fmtUK(t) { return `${fmtDay.format(t)} ${fmtClock.format(t)}`; }
 function renderMoon() {
   const m = moonPhase(), lit = `${Math.round(m.illumination * 100)}% lit`, age = `${m.ageDays.toFixed(1)} days`;
   const label = `${m.name}, ${lit}, ${age} into the cycle`;
-  const face = $('moon-face'); if (face) face.replaceChildren(moonSvg(m.drawFrac, label));
+  const face = $('moon-face'); if (face) face.replaceChildren(moonSvg(m.drawFrac, label, 'weather'));
   const set = (id, v) => { const n = $(id); if (n) n.textContent = v; };
   set('moon-phase', m.name); set('moon-lit', lit); set('moon-age', age);
   set('moon-full', fmtUK(m.nextFull)); set('moon-new', fmtUK(m.nextNew)); set('moon-tide-note', m.tideNote);
@@ -574,24 +732,298 @@ function renderMoon() {
   const bar = $('moon-cycle-bar');
   if (bar) { const i = el('i'); i.style.left = `${(m.frac * 100).toFixed(2)}%`; bar.replaceChildren(i); }
   const home = $('home-moon-face'), hl = $('home-moon-label');
-  if (home) home.replaceChildren(moonSvg(m.drawFrac));
-  if (hl) { hl.textContent = ''; hl.append(document.createTextNode(`${m.name} · ${lit}`), el('small', '', `Next full ${fmtUK(m.nextFull)} · UK time`)); }
+  if (home) home.replaceChildren(moonSvg(m.drawFrac, null, 'home'));
+  if (hl) { hl.textContent = ''; hl.append(document.createTextNode(m.name), el('small', '', lit)); }
+}
+
+// ---------- Branksome wave forecast ----------
+let waveForecast = null;
+const validWaveHeight = value => finite(value) && value >= 0;
+
+function renderWaveForecast() {
+  const forecast = $('wave-forecast'), status = $('wave-status');
+  if (!marineFresh()) {
+    waveForecast = null;
+    forecast.hidden = true;
+    status.hidden = false;
+    status.textContent = !marineFailed && !marine ? 'Loading wave forecast…' : 'Wave forecast unavailable.';
+    $('wave-source').textContent = 'Open-Meteo offshore model';
+    return;
+  }
+
+  const start = Math.floor(Date.now() / HOUR) * HOUR;
+  if (waveForecast?.source === marine && waveForecast.start === start) return;
+  const oldTime = waveForecast && Number($('wave-hour').value) > 0
+    ? waveForecast.hours[Number($('wave-hour').value)].time : start;
+  const byTime = new Map(marineHours().map(row => [row.time, row]));
+  const hours = Array.from({length: 25}, (_, i) => {
+    const time = start + i * HOUR;
+    return byTime.get(time) || {time};
+  });
+  const heights = hours.flatMap(row => [row.wave, row.swell]).filter(validWaveHeight);
+  waveForecast = {source: marine, start, hours};
+  forecast.hidden = !heights.length;
+  status.hidden = heights.length > 0;
+  if (!heights.length) {
+    status.textContent = 'Wave forecast unavailable.';
+    $('wave-source').textContent = 'Open-Meteo offshore model';
+    return;
+  }
+  const latitude = Number(WX_POINT.latitude);
+  const distance = Math.hypot(marine.latitude - latitude,
+    (marine.longitude - Number(WX_POINT.longitude)) * Math.cos(latitude * Math.PI / 180)) * 111;
+  $('wave-source').textContent = `Open-Meteo offshore model · grid point ${Math.round(distance)} km from Branksome`;
+  const ceiling = Math.max(0.5, Math.ceil(Math.max(...heights) * 2) / 2);
+  $('wave-ceiling').textContent = `${ceiling.toFixed(1)} m`;
+  $('wave-ticks').replaceChildren(...[0, 6, 12, 18, 24].map(i => el('span', '', fmtClock.format(hours[i].time))));
+  $('wave-chart').replaceChildren(waveHeightChart(hours, ceiling));
+  $('wave-hour').value = String(Math.min(24, Math.max(0, (oldTime - start) / HOUR)));
+  showWaveHour();
+}
+
+const waveX = hour => 6 + hour / 24 * 628;
+const waveY = (height, ceiling) => 114 - height / ceiling * 108;
+function waveHeightChart(hours, ceiling) {
+  const chart = svg('svg', {viewBox: '0 0 640 120', preserveAspectRatio: 'none'});
+  for (const y of [6, 60, 114]) {
+    chart.append(svg('line', {x1: 6, x2: 634, y1: y, y2: y, class: 'wave-grid'}));
+  }
+  for (const [key, cls] of [['swell', 'wave-curve swell-curve'], ['wave', 'wave-curve combined-curve']]) {
+    let path = '', connected = false;
+    hours.forEach((hour, i) => {
+      if (!validWaveHeight(hour[key])) { connected = false; return; }
+      path += `${connected ? 'L' : 'M'}${waveX(i)} ${waveY(hour[key], ceiling)} `;
+      connected = true;
+    });
+    if (path) chart.append(svg('path', {d: path, class: cls, pathLength: 1}));
+  }
+  chart.append(svg('line', {id: 'wave-cursor', x1: 6, x2: 6, y1: 6, y2: 114}));
+  return chart;
+}
+
+function showWaveHour() {
+  const slider = $('wave-hour'), i = Number(slider.value);
+  const hour = waveForecast?.hours[i];
+  if (!hour) return;
+  const time = `${fmtDay.format(hour.time)} · ${fmtClock.format(hour.time)} UK time`;
+  $('wave-time').textContent = time;
+  const height = value => num(validWaveHeight(value) ? value : null, 'm');
+  const detail = (value, period, direction) => {
+    if (!validWaveHeight(value) || value === 0) return '';
+    return [finite(period) && period > 0 ? num(period, 's') : '', finite(direction) ? `from ${compass(direction)}` : ''].filter(Boolean).join(' · ');
+  };
+  const combinedDetail = detail(hour.wave, hour.period, hour.direction);
+  const swellDetail = detail(hour.swell, hour.swellPeriod, hour.swellDirection);
+  $('wave-combined').textContent = height(hour.wave);
+  $('wave-combined-detail').textContent = combinedDetail;
+  $('wave-swell').textContent = height(hour.swell);
+  $('wave-swell-detail').textContent = swellDetail;
+  $('wave-chop').textContent = height(hour.chop);
+  slider.setAttribute('aria-valuetext', [time,
+    `Combined waves ${height(hour.wave)}`, combinedDetail,
+    `Primary swell ${height(hour.swell)}`, swellDetail,
+    `Wind waves ${height(hour.chop)}`
+  ].filter(Boolean).join(', '));
+  $('wave-cursor').setAttribute('x1', waveX(i));
+  $('wave-cursor').setAttribute('x2', waveX(i));
+}
+
+// ---------- 8-day wave outlook ----------
+let outlookData = null, outlookWind = null, outlookAt = 0, outlookBusy = false;
+let outlookHour = null, outlookSelection = null;
+const outlookFeet = metres => (metres / 0.3048).toFixed(1);
+
+async function refreshWaveOutlook() {
+  if (outlookBusy) return;
+  outlookBusy = true;
+  $('outlook-retry').hidden = true;
+  if (!outlookData) $('outlook-status').textContent = 'Loading wave outlook…';
+  try {
+    const [marineResult, windResult] = await Promise.allSettled([
+      getConditionJSON(OUTLOOK_URL), getConditionJSON(OUTLOOK_WIND_URL)
+    ]);
+    const data = marineResult.value;
+    if (!Array.isArray(data) || data.length !== OUTLOOK_SPOTS.length) throw Error('Incomplete outlook response');
+    outlookData = data;
+    const wind = windResult.value;
+    outlookWind = Array.isArray(wind) && wind.length === OUTLOOK_SPOTS.length ? wind : null;
+  } catch {
+    outlookData = null;
+    outlookWind = null;
+  } finally {
+    outlookAt = Date.now();
+    outlookHour = null;
+    outlookBusy = false;
+    renderWaveOutlook();
+  }
+}
+
+function outlookDays(start) {
+  const days = new Map();
+  for (let time = start; ; time += HOUR) {
+    const date = fmtIsoDay.format(time);
+    if (!days.has(date)) {
+      if (days.size === OUTLOOK_DAYS) break;
+      days.set(date, {date, label: fmtDay.format(time), times: []});
+    }
+    days.get(date).times.push(time);
+  }
+  return [...days.values()];
+}
+
+function outlookGroups(data, days, windData) {
+  const cells = new Map();
+  data.forEach((point, i) => {
+    const spot = OUTLOOK_SPOTS[i];
+    const hasLocation = finite(point?.latitude) && finite(point?.longitude);
+    const key = hasLocation ? `${point.latitude.toFixed(4)},${point.longitude.toFixed(4)}` : spot.name;
+    const hours = marineHours(point?.hourly || {});
+    if (!cells.has(key)) {
+      const wind = windData?.[i]?.hourly;
+      const windHours = Array.isArray(wind?.time) ? wind.time.map((time, j) => [
+        time * 1000, {speed: wind.wind_speed_10m?.[j], direction: wind.wind_direction_10m?.[j]}
+      ]) : [];
+      cells.set(key, {key, spots: [], hours, wind: new Map(windHours)});
+    }
+    const cell = cells.get(key);
+    cell.spots.push(spot);
+    if (!cell.hours.some(row => validWaveHeight(row.wave))) cell.hours = hours;
+  });
+  return [...cells.values()].map(cell => {
+    const rowsByTime = new Map(cell.hours.map(row => [row.time, row]));
+    const name = cell.spots.length === 1 ? cell.spots[0].name : `${cell.spots[0].name} to ${cell.spots.at(-1).name}`;
+    return {...cell, name, forecast: days.map(day => {
+      const rows = day.times.map(time => rowsByTime.get(time));
+      if (!rows.every(row => validWaveHeight(row?.wave))) return null;
+      const heights = rows.map(row => row.wave);
+      return {day, rows, low: Math.min(...heights), high: Math.max(...heights)};
+    })};
+  });
+}
+
+function renderWaveOutlook() {
+  if (!outlookAt) return;
+  if (Date.now() - outlookAt >= WX_REFRESH_MS && !outlookBusy) refreshWaveOutlook();
+  const start = Math.floor(Date.now() / HOUR) * HOUR;
+  if (outlookHour === start) return;
+  outlookHour = start;
+  const days = outlookDays(start);
+  const groups = outlookData ? outlookGroups(outlookData, days, outlookWind) : [];
+  const highs = groups.flatMap(group => group.forecast.filter(Boolean).map(day => day.high));
+  $('outlook-status').hidden = highs.length > 0;
+  $('outlook-retry').hidden = highs.length > 0 || outlookBusy;
+  $('outlook-results').hidden = !highs.length;
+  $('outlook-checked').textContent = highs.length ? `Fetched ${fmtClock.format(outlookAt)} UK` : '';
+  if (!highs.length) {
+    $('outlook-status').textContent = 'Wave outlook unavailable.';
+    return;
+  }
+
+  const head = el('tr');
+  const heading = (txt, scope) => {
+    const th = el('th', '', txt);
+    th.scope = scope;
+    return th;
+  };
+  head.append(heading('Coastal area', 'col'), ...days.map((day, i) => heading(i ? day.label : 'Today', 'col')));
+  $('outlook-head').replaceChildren(head);
+  const scale = Math.max(0.1, ...highs);
+  const rows = [], controls = [];
+  for (const group of groups) {
+    const row = el('tr', group.spots.some(spot => spot.id === HOME_BEACH) ? 'outlook-home' : '');
+    const label = heading(group.name, 'row');
+    if (group.spots.length > 1) {
+      const between = group.spots.slice(1, -1).map(spot => spot.name).join(', ');
+      label.append(el('small', '', between ? `Shared grid · includes ${between}` : 'Shared offshore grid'));
+    }
+    row.append(label);
+    group.forecast.forEach((forecast, i) => {
+      const td = el('td');
+      if (forecast) {
+        const low = outlookFeet(forecast.low), high = outlookFeet(forecast.high);
+        const range = low === high ? low : `${low}–${high}`;
+        const button = el('button', 'outlook-day');
+        button.type = 'button';
+        button.setAttribute('aria-label', `${group.name}, ${days[i].label}, ${range} feet offshore`);
+        button.setAttribute('aria-pressed', 'false');
+        const value = el('strong', '', range);
+        value.append(el('span', 'outlook-unit', ' ft'));
+        button.append(value);
+        const bar = el('span', 'outlook-meter');
+        bar.setAttribute('aria-hidden', 'true');
+        bar.style.setProperty('--height-share', `${forecast.high / scale * 100}%`);
+        button.append(bar);
+        const select = () => showOutlookDay(group, forecast, button);
+        button.addEventListener('click', select);
+        controls.push({matches: group.key === outlookSelection?.key && days[i].date === outlookSelection.date, select});
+        td.append(button);
+      } else td.append(el('span', 'fine', 'Unavailable'));
+      row.append(td);
+    });
+    rows.push(row);
+  }
+  $('outlook-rows').replaceChildren(...rows);
+  (controls.find(control => control.matches) || controls[0]).select();
+}
+
+function showOutlookDay(group, forecast, button) {
+  $('outlook-rows').querySelector('[aria-pressed=true]')?.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-pressed', 'true');
+  outlookSelection = {key: group.key, date: forecast.day.date};
+  $('outlook-detail-title').textContent = `${group.name} · ${forecast.day.label}`;
+  $('outlook-wind-site').textContent = group.spots.length > 1 ? `Wind forecast at ${group.spots[0].name} · UK time` : 'UK time';
+  $('outlook-hours').replaceChildren(...forecast.rows.filter((row, i) => i % 3 === 0).map(row => {
+    const item = el('li');
+    const swell = validWaveHeight(row.swell) ? [
+      `Swell ${outlookFeet(row.swell)} ft`,
+      finite(row.swellPeriod) && row.swellPeriod > 0 ? num(row.swellPeriod, 's') : '',
+      finite(row.swellDirection) ? `from ${compass(row.swellDirection)}` : ''
+    ].filter(Boolean).join(' · ') : 'Swell unavailable';
+    const wind = group.wind.get(row.time);
+    const windDirection = wind?.speed > 0 && finite(wind?.direction) ? ` from ${compass(wind.direction)}` : '';
+    const windLabel = finite(wind?.speed) ? `Wind ${num(wind.speed, 'mph', 0)}${windDirection}` : 'Wind unavailable';
+    item.append(el('span', 'fine', fmtClock.format(row.time)), el('strong', '', `${outlookFeet(row.wave)} ft`),
+      el('span', 'fine', swell), el('span', 'fine', windLabel));
+    return item;
+  }));
+}
+
+// ---------- sunrise and sunset (Open-Meteo daily, Branksome Chine, UK time) ----------
+function sunTimes(now = Date.now()) {
+  const d = weather?.daily, day = t => fmtIsoDay.format(t), find = t => d?.time?.findIndex(x => day(x * 1000) === day(t)) ?? -1;
+  const i = find(now), j = find(now + 24 * HOUR), ms = v => finite(v) ? v * 1000 : NaN;
+  return {rise: ms(d?.sunrise?.[i]), set: ms(d?.sunset?.[i]), nextRise: j >= 0 ? ms(d?.sunrise?.[j]) : NaN};
+}
+const sunLength = ms => { const m = Math.round(ms / 60e3); return `${Math.floor(m / 60)} hr ${m % 60} min`; };
+function sunNote(sun, now = Date.now()) {
+  if (!finite(sun.rise) || !finite(sun.set)) return 'Unavailable';
+  if (now < sun.rise) return `Sunrise in ${ago(sun.rise - now)}`;
+  if (now < sun.set) return `${ago(sun.set - now)} of daylight left`;
+  return finite(sun.nextRise) ? `After sunset · sunrise tomorrow ${fmtClock.format(sun.nextRise)}` : 'After sunset';
+}
+function renderHomeSun() {
+  const box = $('home-sun-label'); if (!box) return;
+  const sun = weatherFresh() ? sunTimes() : null, ok = sun && finite(sun.rise) && finite(sun.set);
+  box.textContent = '';
+  box.append(document.createTextNode(ok ? `Sunrise ${fmtClock.format(sun.rise)} · Sunset ${fmtClock.format(sun.set)}` : (weatherFailed ? 'Sunrise and sunset unavailable' : 'Sunrise and sunset')),
+    el('small', '', ok ? `${sunNote(sun)} · UK time` : (weatherFailed ? 'Weather request failed' : 'Loading…')));
 }
 
 // ---------- conditions ----------
 function renderConditions() {
   const wf = weatherFresh(), set = (id, v) => { $(id).textContent = v; };
   const pending = !weatherFailed && !weather ? '…' : 'Unavailable';
-  if (!wf) { ['rain-24', 'rain-48', 'rain-next', 'wind-speed', 'wind-gust', 'air-temp', 'sunrise', 'sunset', 'daylight-left'].forEach(id => set(id, pending)); set('weather-updated', weatherFailed ? 'Weather request failed. Try Refresh conditions.' : 'Weather loading…'); $('rain-chart').textContent = weatherFailed ? 'Rain chart unavailable.' : 'Loading…'; }
+  if (!wf) { ['rain-24', 'rain-48', 'rain-next', 'wind-speed', 'wind-gust', 'air-temp', 'sunrise', 'sunset', 'day-length', 'daylight-left'].forEach(id => set(id, pending)); set('weather-updated', weatherFailed ? 'Weather request failed. Try Refresh conditions.' : 'Weather loading…'); $('rain-chart').textContent = weatherFailed ? 'Rain chart unavailable.' : 'Loading…'; }
   else {
     const now = Date.now();
     set('rain-24', num(rainWindow(24), 'mm')); set('rain-48', num(rainWindow(48), 'mm')); set('rain-next', num(rainWindow(12, true), 'mm'));
     const c = weather.current || {}, fresh = finite(c.time) && Math.abs(now - c.time * 1000) < 2 * HOUR;
     set('wind-speed', fresh ? num(c.wind_speed_10m, 'mph') + (compass(c.wind_direction_10m) ? ' from ' + compass(c.wind_direction_10m) : '') : 'Unavailable');
     set('wind-gust', fresh ? num(c.wind_gusts_10m, 'mph') : 'Unavailable'); set('air-temp', fresh ? num(c.temperature_2m, '°C') : 'Unavailable');
-    const d = weather.daily, i = d?.time?.findIndex(t => fmtIsoDay.format(t * 1000) === fmtIsoDay.format(now)) ?? -1, rise = d?.sunrise?.[i] * 1000, sset = d?.sunset?.[i] * 1000;
-    set('sunrise', finite(rise) ? fmtClock.format(rise) : 'Unavailable'); set('sunset', finite(sset) ? fmtClock.format(sset) : 'Unavailable');
-    set('daylight-left', !finite(rise) || !finite(sset) ? 'Unavailable' : now < rise ? `Sunrise in ${ago(rise - now)}` : now >= sset ? 'After sunset' : `${ago(sset - now)} until sunset`);
+    const sun = sunTimes(now);
+    set('sunrise', finite(sun.rise) ? fmtClock.format(sun.rise) : 'Unavailable'); set('sunset', finite(sun.set) ? fmtClock.format(sun.set) : 'Unavailable');
+    set('day-length', finite(sun.rise) && finite(sun.set) ? sunLength(sun.set - sun.rise) : 'Unavailable');
+    set('daylight-left', sunNote(sun, now));
     set('weather-updated', `Weather fetched ${fmtClock.format(weatherAt)} · model time ${fresh ? fmtClock.format(c.time * 1000) : 'out of date'} · UK time`);
     rainChart();
   }
@@ -614,7 +1046,7 @@ function rainChart() {
   const s = svg('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `Hourly rain, last 48 hours ${num(rainWindow(48), 'mm')}, next 12 hours ${num(rainWindow(12, true), 'mm')}`});
   for (const r of rows) { const fut = r.time > now; s.append(svg('rect', {x: x(r.time - HOUR) + 1, width: Math.max(1, x(r.time) - x(r.time - HOUR) - 2), y: r.mm == null ? 20 : y(r.mm), height: r.mm == null ? 100 : 120 - y(r.mm), class: r.mm == null ? 'bar-na' : fut ? 'bar-future' : 'bar'})); }
   s.append(svg('line', {x1: x(now), x2: x(now), y1: 10, y2: 124, class: 'now-line'}));
-  for (let t = start; t <= end; t += 12 * HOUR) { const tx = svg('text', {x: x(t), y: 142, 'text-anchor': 'middle', class: 'axis'}); tx.textContent = (fmtIsoDay.format(t) === fmtIsoDay.format(now) ? '' : fmtDay.format(t).split(' ')[0] + ' ') + fmtClock.format(t); s.append(tx); }
+  for (let t = start; t <= end; t += 12 * HOUR) { const tx = svg('text', {x: x(t), y: 142, 'text-anchor': t === start ? 'start' : t === end ? 'end' : 'middle', class: 'axis'}); tx.textContent = (fmtIsoDay.format(t) === fmtIsoDay.format(now) ? '' : fmtDay.format(t).split(' ')[0] + ' ') + fmtClock.format(t); s.append(tx); }
   const mx = svg('text', {x: 2, y: 24, class: 'axis'}); mx.textContent = `${max.toFixed(0)}mm`; s.append(mx);
   box.replaceChildren(s);
 }
@@ -625,7 +1057,7 @@ function tideChart(rows) {
   const s = svg('svg', {viewBox: '0 0 800 160', role: 'img', 'aria-label': 'Model sea level over the next 24 hours, in metres relative to mean sea level.'});
   [0, 6, 12, 18, 24].forEach(i => { s.append(svg('line', {x1: x(i), x2: x(i), y1: 15, y2: 133, class: 'grid'})); const t = svg('text', {x: x(i), y: 154, 'text-anchor': 'middle', class: 'axis'}); t.textContent = fmtClock.format(rows[i].time); s.append(t); });
   [min, max].forEach(v => { const t = svg('text', {x: 3, y: y(v) + 4, class: 'axis'}); t.textContent = `${v.toFixed(1)}m`; s.append(t); });
-  s.append(svg('path', {d: rows.map((r, i) => `${i ? 'L' : 'M'}${x(i)},${y(r.level)}`).join(' '), class: 'tide-line'}));
+  s.append(svg('path', {d: rows.map((r, i) => `${i ? 'L' : 'M'}${x(i)},${y(r.level)}`).join(' '), class: 'tide-line', pathLength: 1}));
   box.replaceChildren(s);
 }
 
@@ -671,6 +1103,84 @@ function loadLeaflet() {
   });
   return leafletLoading;
 }
+// A single model vector from Branksome, drawn over a north-up reference map.
+let windMap = null, windMapStarting = false, windMapSize = '';
+const hasWindPanel = () => state.view === 'home' || state.view === 'conditions';
+const windBounds = [[50.678, -1.954], [50.727, -1.862]];
+async function ensureWindMap() {
+  if (windMapStarting) return;
+  const node = $('wind-map');
+  if (!windMap) {
+    windMapStarting = true;
+    try {
+      await loadLeaflet();
+      if (!hasWindPanel()) return;
+      node.textContent = '';
+      windMap = L.map(node, {
+        zoomControl: false, attributionControl: true, zoomSnap: 0.25,
+        dragging: false, keyboard: false, scrollWheelZoom: false,
+        touchZoom: false, doubleClickZoom: false, boxZoom: false
+      });
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 18
+      }).addTo(windMap);
+      for (const beach of BEACHES.filter(b => ['branksome','shore-road','sandbanks','bournemouth-pier'].includes(b.id))) {
+        const home = beach.id === HOME_BEACH;
+        L.circleMarker([beach.lat, beach.lon], {
+          radius: home ? 5 : 3, weight: 2, color: '#194659',
+          fillColor: home ? '#a7ecdb' : '#fff', fillOpacity: 1, interactive: false
+        }).bindTooltip(home ? 'Branksome' : beach.name, {
+          permanent: true, direction: 'top', offset: [0,-3], className: home ? 'wind-place wind-place-home' : 'wind-place'
+        }).addTo(windMap);
+      }
+    } catch {
+      windMap?.remove();
+      windMap = null;
+      windMapSize = '';
+      node.textContent = 'Map unavailable. The wind reading is shown above.';
+      return;
+    } finally {
+      windMapStarting = false;
+    }
+  }
+  const size = `${node.clientWidth}x${node.clientHeight}`;
+  if (node.clientWidth && size !== windMapSize) {
+    windMapSize = size;
+    windMap.invalidateSize();
+    windMap.fitBounds(windBounds, {padding: [12,12], animate: false});
+  }
+}
+
+function renderWindMap(current) {
+  const field = $('wind-field'), readout = $('wind-map-reading');
+  const speed = current?.wind_speed_10m, bearing = current?.wind_direction_10m;
+  const fresh = finite(current?.time) && Math.abs(Date.now() - current.time * 1000) < 2 * HOUR;
+  const hasWind = fresh && finite(speed) && speed > 0 && finite(bearing);
+  const to = finite(bearing) ? ((bearing + 180) % 360 + 360) % 360 : null;
+  const text = !weather && !weatherFailed ? 'Waiting for the Branksome forecast…' :
+    !fresh || !finite(speed) || speed < 0 ? 'Current model wind unavailable' :
+    speed === 0 ? 'Calm · 0 mph' : !hasWind ? `${num(speed, 'mph')} · direction unavailable` :
+    `${num(speed, 'mph')} · from ${compass(bearing)} towards ${compass(to)}`;
+  if (readout.textContent !== text) readout.textContent = text;
+  field.hidden = !hasWind;
+  if (hasWind) {
+    // The artwork points right (east) at zero rotation. Bearings start at north.
+    field.style.setProperty('--wind-angle', `${to - 90}deg`);
+    field.style.setProperty('--wind-period', `${Math.max(2.8, 5.5 - speed / 12)}s`);
+    if (!field.childElementCount) {
+      for (let i = 0; i < 15; i++) {
+        const direction = el('span', 'wind-direction');
+        direction.style.setProperty('--wind-delay', `${-(i % 7) * 0.55}s`);
+        direction.append(el('span', 'wind-arrow', '➝'));
+        field.append(direction);
+      }
+    }
+  }
+  ensureWindMap();
+}
+window.addEventListener('resize', () => { if (hasWindPanel()) ensureWindMap(); });
+
 async function ensureMap() {
   if (map) return true;
   try { await loadLeaflet(); } catch { $('map').replaceChildren(el('p', 'map-msg', 'The map could not load. Every outfall is still in the list.')); return false; }
@@ -686,7 +1196,7 @@ async function renderMap() {
   if (state.view !== 'map' || !(await ensureMap())) return;
   layer.clearLayers(); markers.clear();
   for (const b of BEACHES) {
-    const k = beachSummary(b).worst.kind;
+    const k = beachSummary(b).status.kind;
     L.marker([b.lat, b.lon], {icon: L.divIcon({className: 'beach-pin', html: `<span class="bp ${k}"></span><b>${b.name}</b>`, iconSize: null}), title: `${b.name}: ${KIND_LABEL[k]}`, alt: b.name})
       .on('click', () => { location.hash = `view=beaches&beach=${b.id}`; }).addTo(layer);
   }
@@ -744,7 +1254,7 @@ function downloadCSV(rows, label) {
     for (const e of eventsFor(r)) out.push(['event_24h', r.id, r.mapId, nameOf(r), '', r.water, r.lat, r.lon, '', '', iso(e.start), iso(e.end), '', iso(checkedAt)].map(esc).join(','));
   }
   const a = el('a'); a.href = URL.createObjectURL(new Blob([out.join('\n') + '\n'], {type: 'text/csv'}));
-  a.download = `coast-watch-${label}-${new Date(checkedAt).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.csv`;
+  a.download = `beachbuds-alerts-${label}-${new Date(checkedAt).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.csv`;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function copyLink(hash) {
@@ -762,9 +1272,24 @@ function route() {
   if (p.get('status') && ['active', 'recent', 'quiet', 'unknown'].includes(p.get('status'))) Object.assign(state, {filter: p.get('status'), area: 'all', query: '', savedOnly: false});
   if (p.get('beach')) state.open = 'b:' + p.get('beach');
   const changed = view !== state.view; state.view = view;
+  if (changed) playedCharts.clear();
   document.querySelectorAll('[data-view-panel]').forEach(s => { s.hidden = s.dataset.viewPanel !== view; });
   document.querySelectorAll('.tabs a').forEach(a => { if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  if (hasWindPanel()) {
+    const anchor = view === 'home' ? $('home-hero') : document.querySelector('#view-conditions .cond-grid');
+    const panel = $('wind-panel');
+    if (anchor.nextElementSibling !== panel) anchor.after(panel);
+  }
   renderView();
+  const section = p.get('section');
+  const sectionPanel = view === 'conditions' && section === 'wind' ? $('wind-panel') :
+    view === 'home' && section === 'waves' ? $('wave-panel') :
+    view === 'home' && section === 'outlook' ? $('outlook-panel') : null;
+  if (sectionPanel) {
+    sectionPanel.focus({preventScroll: true});
+    sectionPanel.scrollIntoView({block: 'start', behavior: motionPaused || reducedMotion() ? 'auto' : 'smooth'});
+    return;
+  }
   if (view === 'map' && p.get('place')) focusOutfall(p.get('place'));
   else if (view === 'map' && p.get('beach')) focusBeach(p.get('beach'));
   else if (view === 'beaches' && p.get('beach')) { const n = document.querySelector(`#beach-list [data-beach="${CSS.escape(p.get('beach'))}"]`); if (n) { n.open = true; n.scrollIntoView({block: 'center'}); } }
@@ -774,8 +1299,41 @@ function route() {
 function renderView() {
   renderLive();
   ({home: renderHome, beaches: renderBeaches, history: renderHistory, conditions: renderConditions, map: renderPlaces, alerts: renderAlerts})[state.view]();
+  if (hasWindPanel()) renderWindMap(weatherFresh() ? weather.current : null);
+  observeCharts();
 }
 const renderAll = renderView; // only the visible view is rebuilt; others render when opened
+
+// ---------- chart motion ----------
+const playedCharts = new Set();
+const chartSelectors = [
+  '#home-strip .rain-strip', '#home-strip .tl-bar',
+  '#history-chart .rain-strip', '#history-chart .tl-bar',
+  '#rain-chart svg', '#tide-curve svg', '#wave-chart svg'
+];
+const chartObserver = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting || !entry.target.isConnected) continue;
+    chartObserver.unobserve(entry.target);
+    const key = entry.target.dataset.motionKey;
+    if (playedCharts.has(key) || motionPaused || reducedMotion()) continue;
+    playedCharts.add(key);
+    entry.target.classList.add('chart-reveal');
+  }
+}, {threshold: 0.15}) : null;
+
+function observeCharts() {
+  chartObserver?.disconnect();
+  if (!chartObserver || motionPaused || reducedMotion()) return;
+  for (const selector of chartSelectors) {
+    if (playedCharts.has(selector)) continue;
+    const chart = document.querySelector(selector);
+    if (!chart || chart.closest('[hidden]') || chart.classList.contains('na')) continue;
+    if (!chart.querySelector('i:not(.na), .bar, .bar-future, .tide-line, .combined-curve')) continue;
+    chart.dataset.motionKey = selector;
+    chartObserver.observe(chart);
+  }
+}
 
 // ---------- motion ----------
 let motionPaused = false; try { motionPaused = storage?.getItem(MOTION_KEY) === 'true'; } catch {}
@@ -796,6 +1354,16 @@ $('area').addEventListener('change', e => { state.area = e.target.value; renderP
 $('saved-only').addEventListener('click', () => { state.savedOnly = !state.savedOnly; renderPlaces(); });
 $('csv').addEventListener('click', () => downloadCSV(filtered(), 'local'));
 $('alert-period').addEventListener('change', e => { state.alertHours = e.target.value === 'all' ? Infinity : Number(e.target.value); renderAlerts(); });
+$('wave-hour').addEventListener('input', showWaveHour);
+$('outlook-retry').addEventListener('click', refreshWaveOutlook);
+if (typeof IntersectionObserver === 'function') {
+  const observer = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    observer.disconnect();
+    refreshWaveOutlook();
+  }, {rootMargin: '180px 0px'});
+  observer.observe($('outlook-panel'));
+} else refreshWaveOutlook();
 window.addEventListener('hashchange', route);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
@@ -812,4 +1380,5 @@ refreshConditions();
 window.CW_moonPhase = moonPhase;
 window.CW_classifyStatus = classifyStatus;
 window.CW_BEACHES = BEACHES;
+window.CW_bathingSeason = bathingSeason;
 })();

@@ -31,3 +31,6 @@ tmp/
 
 # Manual backups (git history replaces these)
 backup-*/
+
+# Generated single-file build
+beachbuds-alerts.html

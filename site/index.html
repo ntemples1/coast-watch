@@ -3,36 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Coast Watch | Branksome, Bournemouth and Poole sewage overflow reports</title>
+<title>BeachBuds Alerts | Branksome, Bournemouth and Poole sewage overflow reports</title>
 <meta name="description" content="Live Wessex Water storm overflow reports for Branksome Chine, Bournemouth and Poole beaches, with 24-hour history, rain, wind and tide context.">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#08191f">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Coast Watch">
-<meta property="og:title" content="Coast Watch | Branksome, Bournemouth and Poole">
+<meta property="og:site_name" content="BeachBuds Alerts">
+<meta property="og:title" content="BeachBuds Alerts | Branksome, Bournemouth and Poole">
 <meta property="og:description" content="Live sewage overflow reports for local beaches, with rain and tide context. Check before you swim.">
-<meta property="og:image" content="assets/icons/og-image.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image" content="assets/icons/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
 <meta property="og:locale" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="apple-mobile-web-app-title" content="Coast Watch">
+<link rel="manifest" href="beachbuds.webmanifest">
+<meta name="apple-mobile-web-app-title" content="BeachBuds Alerts">
 <link rel="preload" href="assets/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://services.arcgis.com" crossorigin>
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=6.1">
+<link rel="stylesheet" href="assets/beachbuds-6.4/style-6.7.css?rev=20261126">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap top-inner">
-    <a class="brand" href="#view=home" aria-label="Coast Watch home">
+    <a class="brand" href="#view=home" aria-label="BeachBuds Alerts home">
       <svg viewBox="0 0 36 36" aria-hidden="true"><path d="M3 10c5-7 10 7 15 0s10 7 15 0M3 18c5-7 10 7 15 0s10 7 15 0M3 26c5-7 10 7 15 0s10 7 15 0"/></svg>
-      <span>coast<b>watch</b><small>Bournemouth · Branksome · Poole</small></span>
+      <span>BeachBuds <b>Alerts</b><small>Bournemouth · Branksome · Poole</small></span>
     </a>
     <div class="top-actions">
       <button id="motion-toggle" class="btn ghost small" type="button" aria-pressed="false">Pause motion</button>
@@ -60,29 +60,121 @@
   <section id="view-home" class="view" data-view-panel="home" aria-labelledby="home-title">
     <article id="home-hero" class="hero" data-kind="unknown">
       <div class="sea-scene" aria-hidden="true"><div class="sea-orb"></div><svg class="sea-waves" viewBox="0 0 1400 300" preserveAspectRatio="none"><path d="M-300 140 Q-125 80 50 140 T400 140 T750 140 T1100 140 T1450 140 T1800 140 V400 H-300Z"/><path d="M-300 180 Q-125 120 50 180 T400 180 T750 180 T1100 180 T1450 180 T1800 180 V400 H-300Z"/><path d="M-300 220 Q-125 160 50 220 T400 220 T750 220 T1100 220 T1450 220 T1800 220 V400 H-300Z"/></svg></div>
-      <p class="eyebrow"><span aria-hidden="true">★</span> Your first port of call</p>
-      <h1 id="home-title">Branksome <em>Chine.</em></h1>
+      <div class="home-heading">
+        <h1 id="home-title">Branksome <em>Chine</em></h1>
+        <a class="home-moon" id="home-moon" href="#view=conditions">
+          <span id="home-moon-face" class="home-moon-face" aria-hidden="true"></span>
+          <span id="home-moon-label" class="home-moon-label">Moon phase</span>
+        </a>
+      </div>
       <p class="metric-label">Latest monitor status</p>
       <div id="home-status" class="home-status"><span class="badge unknown"><i class="dot unknown"></i>Checking</span></div>
       <p id="home-summary" class="home-summary">Getting Branksome’s latest overflow report.</p>
-      <p id="home-nearby" class="home-nearby" hidden></p>
-      <div class="tl-wrap" id="home-strip"></div>
       <dl class="metrics">
         <div><dt>Last reported stop</dt><dd id="home-stop">…</dd><span id="home-stop-date" class="muted"></span></div>
         <div><dt>Last event lasted</dt><dd id="home-duration">…</dd><span class="muted">Latest event, not a daily total</span></div>
         <div><dt>Rain, last 24h</dt><dd id="home-rain">…</dd><span id="home-rain-note" class="muted">Model estimate at Branksome</span></div>
         <div><dt>Wessex updated</dt><dd id="home-updated">…</dd><span id="home-updated-date" class="muted"></span></div>
       </dl>
-      <a class="home-moon" id="home-moon" href="#view=conditions">
-        <span id="home-moon-face" class="home-moon-face" aria-hidden="true"></span>
-        <span id="home-moon-label">Moon phase</span>
+      <a class="home-moon home-sun" id="home-sun" href="#view=conditions">
+        <span class="home-sun-face" aria-hidden="true"><svg viewBox="0 0 36 36"><path class="sun-rays" d="M18 3v5M18 28v5M3 18h5M28 18h5M7.4 7.4l3.5 3.5M25.1 25.1l3.5 3.5M7.4 28.6l3.5-3.5M25.1 10.9l3.5-3.5"/><circle class="sun-disc" cx="18" cy="18" r="7"/></svg></span>
+        <span id="home-sun-label">Sunrise and sunset</span>
       </a>
-      <div class="actions">
-        <a class="btn primary" href="#view=history&amp;place=WXW00865">Branksome’s 24h history</a>
+      <div class="actions hero-actions">
+        <a class="btn primary" href="#view=history&amp;place=WXW00865">24h history</a>
         <a class="btn" href="#view=map&amp;place=WXW00865">Find on map</a>
+        <a class="btn" href="#view=home&amp;section=waves">Wave forecast</a>
         <button class="btn star-btn" type="button" data-save-beach="branksome" aria-pressed="false">☆ Save</button>
       </div>
+      <div class="tl-wrap" id="home-strip"></div>
       <p class="hero-safety">Overflow reports do not confirm safe swimming. <a href="https://www.gov.uk/quality-of-local-bathing-water" target="_blank" rel="noopener">Check bathing water advice ↗</a></p>
+    </article>
+
+    <article class="card wind-card" id="wind-panel" tabindex="-1" aria-labelledby="wind-map-title">
+      <div class="wind-heading"><h2 class="h3" id="wind-map-title">Wind over Poole Bay</h2><p id="wind-map-reading" class="wind-reading" role="status">Waiting for the Branksome forecast…</p></div>
+      <div class="wind-map-frame">
+        <div id="wind-map" role="img" aria-label="North-up map of the coast from Sandbanks to Bournemouth" aria-describedby="wind-map-reading wind-map-note"></div>
+        <div id="wind-field" class="wind-field" aria-hidden="true" hidden></div>
+        <span class="wind-north" aria-hidden="true">↑ N</span>
+      </div>
+      <p class="fine" id="wind-map-note">Arrows show where the wind is blowing towards. The map repeats the Branksome model reading across the view.</p>
+    </article>
+
+    <article class="card wave-card" id="wave-panel" tabindex="-1" aria-labelledby="wave-title">
+      <div class="wave-heading">
+        <h2 id="wave-title">Branksome wave forecast</h2>
+        <a class="outlook-jump" href="#view=home&amp;section=outlook">Compare beaches <span aria-hidden="true">↓</span></a>
+      </div>
+      <p class="fine" id="wave-source">Open-Meteo offshore model</p>
+      <p id="wave-status" class="fine" role="status">Loading wave forecast…</p>
+      <div id="wave-forecast" hidden>
+        <div class="wave-hour-heading">
+          <h3>Next 24 hours</h3>
+          <span id="wave-time"></span>
+        </div>
+        <dl class="wave-readings" id="wave-readings">
+          <div><dt>Combined waves</dt><dd id="wave-combined">…</dd><dd id="wave-combined-detail" class="fine"></dd></div>
+          <div><dt>Primary swell</dt><dd id="wave-swell">…</dd><dd id="wave-swell-detail" class="fine"></dd></div>
+          <div><dt>Wind waves</dt><dd id="wave-chop">…</dd></div>
+        </dl>
+        <div class="wave-plot" aria-hidden="true">
+          <div class="wave-legend"><span>Combined height</span><span>Primary swell</span></div>
+          <div class="wave-graph">
+            <div class="wave-scale"><span id="wave-ceiling"></span><span>0 m</span></div>
+            <div id="wave-chart"></div>
+          </div>
+          <div id="wave-ticks" class="wave-ticks"></div>
+        </div>
+        <div class="wave-control">
+          <label for="wave-hour">Explore by hour</label>
+          <input id="wave-hour" type="range" min="0" max="24" value="0">
+        </div>
+      </div>
+      <p class="fine wave-note">Period is the time between wave crests. Model heights describe waves offshore. Breaking surf at the beach can differ.</p>
+      <div class="wave-links">
+        <a href="https://www.surfline.com/surf-report/branksome-dene-chine/613bcbad5c02790ed0d5aedf" target="_blank" rel="noopener">Surfline · Branksome Dene <span aria-hidden="true">↗</span></a>
+        <a href="https://weather.metoffice.gov.uk/forecast/gcn8kwc8q" target="_blank" rel="noopener">Met Office · Branksome Chine <span aria-hidden="true">↗</span></a>
+      </div>
+    </article>
+
+    <article class="card outlook-card" id="outlook-panel" tabindex="-1" aria-labelledby="outlook-title">
+      <div class="outlook-heading">
+        <div>
+          <h2 id="outlook-title">8-day wave outlook</h2>
+          <p class="fine">Daily offshore wave height ranges in feet. Select a day for swell and wind.</p>
+        </div>
+        <span class="fine" id="outlook-checked"></span>
+      </div>
+      <p class="fine" id="outlook-status" role="status">Loading wave outlook…</p>
+      <button type="button" class="btn small" id="outlook-retry" hidden>Retry wave outlook</button>
+      <div id="outlook-results" hidden>
+        <div class="outlook-scroll" role="region" aria-label="Scroll across eight forecast days" tabindex="0">
+          <table class="outlook-table" aria-label="Daily offshore wave height by coastal area">
+            <thead id="outlook-head"></thead>
+            <tbody id="outlook-rows"></tbody>
+          </table>
+        </div>
+        <div class="outlook-detail">
+          <h3 id="outlook-detail-title" aria-live="polite"></h3>
+          <p class="fine" id="outlook-wind-site"></p>
+          <ul id="outlook-hours" class="outlook-hours"></ul>
+        </div>
+      </div>
+      <p class="fine outlook-note">Today covers the remaining model hours. Bars compare the daily peak on the same scale. Open-Meteo offshore estimates can differ from breaking surf at the beach.</p>
+      <div class="wave-links">
+        <a href="https://maps.coastalmonitoring.org/realtimedata/?chart=66&amp;datum=chart&amp;disp_option=1&amp;range=day&amp;tab=waves" target="_blank" rel="noopener">Live Boscombe buoy observations <span aria-hidden="true">↗</span></a>
+      </div>
+      <details class="outlook-reports">
+        <summary>Beach-by-beach Surfline reports</summary>
+        <div class="wave-links">
+          <a href="https://www.surfline.com/surf-report/branksome-dene-chine/613bcbad5c02790ed0d5aedf" target="_blank" rel="noopener">Branksome Dene ↗</a>
+          <a href="https://www.surfline.com/surf-report/sandbanks-beach/61c12bce3883916d0d0e850d" target="_blank" rel="noopener">Sandbanks ↗</a>
+          <a href="https://www.surfline.com/surf-report/bournemouth/584204214e65fad6a7709cf4" target="_blank" rel="noopener">Bournemouth ↗</a>
+          <a href="https://www.surfline.com/surf-report/boscombe/584204214e65fad6a7709cee" target="_blank" rel="noopener">Boscombe ↗</a>
+          <a href="https://www.surfline.com/surf-report/southbourne/613950465f0d00288cf60f6b" target="_blank" rel="noopener">Southbourne ↗</a>
+          <a href="https://www.surfline.com/surf-report/avon-beach/613bc8e0c060e01a55d9ebd6" target="_blank" rel="noopener">Avon Beach ↗</a>
+        </div>
+      </details>
     </article>
 
     <section class="area card" aria-labelledby="area-title">
@@ -98,14 +190,24 @@
       </div>
     </section>
 
+    <section id="home-bathing" class="bathing card" aria-label="Official bathing water"><p class="muted">Loading the Environment Agency rating…</p></section>
+
     <section class="rain-context card" aria-labelledby="rain-title">
-      <h2 id="rain-title" class="h3">Rain context</h2>
+      <h2 id="rain-title" class="h3">Weather &amp; tides</h2>
       <p id="rain-context" class="muted">Loading rainfall…</p>
-      <div id="rain-mini" class="rain-mini"></div>
-      <p class="fine">Storm overflows mostly operate during or after heavy rain. Rain totals are model estimates and are shown for context only. They do not tell you whether the water is safe.</p>
+      <a class="link weather-link" href="#view=conditions">View weather, tides and daylight <span aria-hidden="true">→</span></a>
     </section>
 
-    <section aria-labelledby="mine-title">
+    <section class="card nearby-beaches" aria-labelledby="nearby-title">
+      <div class="section-head"><h2 id="nearby-title">Nearby beaches</h2><a href="#view=beaches" class="link">All beaches <span aria-hidden="true">→</span></a></div>
+      <ul class="beach-links">
+        <li><a href="#view=beaches&amp;beach=canford-cliffs">Canford Cliffs <span aria-hidden="true">↗</span></a></li>
+        <li><a href="#view=beaches&amp;beach=alum">Alum Chine <span aria-hidden="true">↗</span></a></li>
+        <li><a href="#view=beaches&amp;beach=durley">Durley Chine <span aria-hidden="true">↗</span></a></li>
+        <li><a href="#view=beaches&amp;beach=shore-road">Shore Road <span aria-hidden="true">↗</span></a></li>
+      </ul>
+    </section>
+    <section class="saved-beaches" aria-labelledby="mine-title">
       <div class="section-head"><h2 id="mine-title">Your beaches</h2><a href="#view=beaches" class="link">All beaches →</a></div>
       <div id="my-beaches" class="cards"></div>
     </section>
@@ -114,7 +216,7 @@
   <!-- ===== Beaches ===== -->
   <section id="view-beaches" class="view" data-view-panel="beaches" hidden aria-labelledby="beaches-title">
     <div class="section-head"><h2 id="beaches-title">Beaches</h2></div>
-    <p class="muted">Each beach shows the worst status of its nearest monitored outfalls. Outfall locations do not show how far pollution spreads. Tap ☆ to save a beach to your home screen list.</p>
+    <p class="muted">Card colours show the report for that beach’s named outfall, where one is listed. Open a card to see nearby outfalls. Tap ☆ to save a beach to your home screen.</p>
     <div id="beach-list" class="cards"></div>
   </section>
 
@@ -143,24 +245,45 @@
   <!-- ===== Weather & tides ===== -->
   <section id="view-conditions" class="view" data-view-panel="conditions" hidden aria-labelledby="conditions-title">
     <div class="section-head">
-      <div><p class="eyebrow">Branksome · weather and sea</p><h2 id="conditions-title">The bigger picture</h2></div>
+      <div><p class="eyebrow">Branksome Chine</p><h2 id="conditions-title">Weather &amp; tides</h2></div>
       <button id="conditions-refresh" class="btn small" type="button">Refresh conditions ↻</button>
     </div>
     <p class="muted">Rain, wind and tides give context alongside the overflow reports. These forecasts do not measure bacteria or predict where pollution will travel.</p>
+    <article class="card moon-card" id="moon-card" aria-labelledby="moon-title">
+      <h3 id="moon-title">Moon and tides</h3>
+      <div class="moon-block">
+        <div id="moon-face" class="moon-face"></div>
+        <div class="moon-copy">
+          <div class="moon-phase-line"><strong id="moon-phase">…</strong><span id="moon-lit">…</span></div>
+          <dl class="moon-facts">
+            <div><dt>Next full moon</dt><dd id="moon-full">…</dd></div>
+            <div><dt>Next new moon</dt><dd id="moon-new">…</dd></div>
+          </dl>
+          <p id="moon-tide-note" class="fine"></p>
+        </div>
+      </div>
+      <details class="moon-cycle">
+        <summary>Moon cycle</summary>
+        <p class="fine">Time since new moon <span id="moon-age">…</span></p>
+        <div id="moon-cycle-bar" class="moon-cycle-bar" aria-hidden="true"></div>
+        <div id="moon-cycle-steps" class="moon-cycle-steps"></div>
+      </details>
+      <p class="moon-credit">Moon phase illustration with a <a href="https://svs.gsfc.nasa.gov/5001/" target="_blank" rel="noopener">NASA Scientific Visualization Studio photograph</a>. Times shown in the UK time zone.</p>
+    </article>
     <div class="cond-grid">
       <article class="card cond"><p class="metric-label">Rain · last 24 complete hours</p><strong id="rain-24">…</strong><p class="fine">Model estimate, rain plus showers</p>
         <dl><div><dt>Last 48 hours</dt><dd id="rain-48">…</dd></div><div><dt>Next 12 hours forecast</dt><dd id="rain-next">…</dd></div></dl></article>
       <article class="card cond"><p class="metric-label">Wind now · model</p><strong id="wind-speed">…</strong><p class="fine">Direction the wind comes from</p>
-        <dl><div><dt>Gusts</dt><dd id="wind-gust">…</dd></div><div><dt>Air temperature</dt><dd id="air-temp">…</dd></div></dl></article>
+        <dl><div><dt>Gusts</dt><dd id="wind-gust">…</dd></div><div><dt>Air temperature</dt><dd id="air-temp">…</dd></div></dl><a class="wind-jump" href="#view=conditions&amp;section=wind">Wind map <span aria-hidden="true">↓</span></a></article>
       <article class="card cond"><p class="metric-label">Sea level · including tides</p><strong id="sea-trend">…</strong><p class="fine" id="sea-level">…</p>
-        <dl><div><dt>Waves offshore</dt><dd id="wave-height">…</dd></div><div><dt>Sea surface temperature</dt><dd id="sea-temp">…</dd></div></dl></article>
+        <dl><div><dt>Waves offshore</dt><dd id="wave-height">…</dd></div><div><dt>Sea surface temperature</dt><dd id="sea-temp">…</dd></div></dl><a class="wind-jump" href="#view=home&amp;section=waves">Branksome wave forecast <span aria-hidden="true">→</span></a></article>
       <article class="card cond"><p class="metric-label">Daylight · today, UK time</p>
-        <dl class="sun"><div><dt>Sunrise</dt><dd id="sunrise">…</dd></div><div><dt>Sunset</dt><dd id="sunset">…</dd></div></dl><p id="daylight-left" class="fine">…</p></article>
+        <dl class="sun"><div><dt>Sunrise</dt><dd id="sunrise">…</dd></div><div><dt>Sunset</dt><dd id="sunset">…</dd></div></dl><p class="fine">Day length <b id="day-length">…</b></p><p id="daylight-left" class="fine">…</p></article>
     </div>
     <article class="card">
       <h3>Rain by hour: last 48 hours and next 12</h3>
       <div id="rain-chart" class="rain-chart">Loading…</div>
-      <p class="fine">Bars are hourly model rain plus showers at Branksome. The line marks now.</p>
+      <p class="fine">Bars show hourly model rain plus showers at Branksome. Lighter bars show the forecast. The dashed line marks now.</p>
     </article>
     <article class="card">
       <h3>Next 24 hours: model sea level</h3>
@@ -172,27 +295,7 @@
       <p class="fine">Recent rain uses archived model estimates for complete hours. It is not an observed catchment total. Weather and sea data refresh every 30 minutes while open. Sources: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> weather models and <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener">marine models</a> (including Météo-France and Copernicus Marine), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Waves are offshore estimates, not surf at the beach.</p>
       <a class="btn small" href="https://www.phc.co.uk/safety/vts/tides/" target="_blank" rel="noopener">Official local tide tables ↗</a>
     </article>
-    <article class="card moon-card" id="moon-card" aria-labelledby="moon-title">
-      <h3 id="moon-title">Moon and tides</h3>
-      <div class="moon-block">
-        <div id="moon-face" class="moon-face"></div>
-        <div class="moon-copy">
-          <p class="metric-label">Phase now · UK time</p>
-          <strong id="moon-phase">…</strong>
-          <dl class="moon-facts">
-            <div><dt>Lit</dt><dd id="moon-lit">…</dd></div>
-            <div><dt>Age this cycle</dt><dd id="moon-age">…</dd></div>
-            <div><dt>Next full moon</dt><dd id="moon-full">…</dd></div>
-            <div><dt>Next new moon</dt><dd id="moon-new">…</dd></div>
-          </dl>
-          <p id="moon-tide-note" class="fine"></p>
-        </div>
-      </div>
-      <div class="moon-cycle">
-        <div id="moon-cycle-bar" class="moon-cycle-bar" aria-hidden="true"></div>
-        <div id="moon-cycle-steps" class="moon-cycle-steps"></div>
-      </div>
-    </article>
+
   </section>
 
   <!-- ===== Map & places ===== -->
@@ -201,7 +304,7 @@
     <div class="map-layout">
       <div class="map-col">
         <div id="map" role="region" aria-label="Map of monitored outfalls and beaches"><p class="map-msg">Loading the map…</p></div>
-        <div class="map-legend" aria-hidden="true"><span><i class="dot active"></i>Discharging now</span><span><i class="dot recent"></i>Ended in last 24h</span><span><i class="dot quiet"></i>Not discharging</span><span><i class="dot unknown"></i>Offline or unavailable</span><span><i class="dot beach"></i>Beach (same colours)</span></div>
+        <div class="map-legend" aria-hidden="true"><span><i class="dot active"></i>Discharging now</span><span><i class="dot recent"></i>Ended in last 24h</span><span><i class="dot quiet"></i>Not discharging</span><span><i class="dot unknown"></i>Offline or unavailable</span><span><i class="dot beach"></i>Beach with named outfall</span><span><i class="dot nearby"></i>Nearby reports only</span></div>
         <p class="fine">Circles are outfalls and squares are beaches. Colours match the status key. Markers show monitor status at that place, not how far pollution spreads.</p>
       </div>
       <div class="list-col">
@@ -245,19 +348,21 @@
     <p><b>These are overflow monitor reports.</b> They show when a monitored overflow operates. They do not measure bacteria, discharge volume or how far it spreads. "Not discharging" does not mean the water is clean.</p>
     <p><b>Updates take time.</b> Wessex says its map refreshes every 15 minutes and reports are normally available within an hour of a discharge starting. Missing, delayed, offline or inconsistent reports show as Unavailable, never as an all-clear.</p>
     <p><b>History covers about 24 hours.</b> That is all Wessex publishes in its live event feed. Older dates come from each outfall’s latest event times.</p>
+    <p><b>Bathing water ratings are yearly.</b> The Environment Agency rates each designated bathing water Excellent, Good, Sufficient or Poor from the last four seasons of samples. It is not a reading for today. From 15 May to 30 September the EA also publishes a daily pollution risk forecast, which Coast Watch links to on Swimfo.</p>
     <p><b>Rain is context, not a verdict.</b> Overflows usually follow heavy rain, but dry weather does not make the water safe and rain does not prove a discharge.</p>
     <p>Check the <a href="https://www.gov.uk/quality-of-local-bathing-water" target="_blank" rel="noopener">Environment Agency bathing water information ↗</a> and local beach notices before going in. <a href="https://www.wessexwater.co.uk/your-wastewater/coast-and-rivers-watch" target="_blank" rel="noopener">How Wessex’s monitors work ↗</a></p>
   </details>
 </main>
 
 <footer class="wrap footer">
-  <p><b>coastwatch</b><br>Independent local dashboard. Not affiliated with Wessex Water. All times are UK time.</p>
-  <p>Overflow data: <a href="https://www.wessexwater.co.uk/coast-and-rivers-watch-map" target="_blank" rel="noopener">Wessex Water Coast and Rivers Watch</a> and <a href="https://www.streamwaterdata.co.uk/datasets/632885799ff946cd86200f07b7f175fb_0/explore" target="_blank" rel="noopener">Stream Water Data</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.</p>
+  <p><b>BeachBuds Alerts</b><br>Independent local dashboard. Not affiliated with Wessex Water. All times are UK time.</p>
+  <p>Overflow data: <a href="https://www.wessexwater.co.uk/coast-and-rivers-watch-map" target="_blank" rel="noopener">Wessex Water Coast and Rivers Watch</a> and <a href="https://www.streamwaterdata.co.uk/datasets/632885799ff946cd86200f07b7f175fb_0/explore" target="_blank" rel="noopener">Stream Water Data</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Bathing water ratings: <a href="https://environment.data.gov.uk/bwq/profiles/" target="_blank" rel="noopener">Environment Agency</a>, <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">OGL v3</a>. Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.</p>
 </footer>
 
 <div class="toast" id="toast" role="status" hidden></div>
 <noscript><div class="noscript">JavaScript is needed to load live data. <a href="https://www.wessexwater.co.uk/coast-and-rivers-watch-map">Open Wessex Water’s map</a>.</div></noscript>
 <script src="assets/js/data.js?v=6.1" defer></script>
-<script src="assets/js/app.js?v=6.1" defer></script>
+<script src="assets/js/bathing.js?rev=20261126" defer></script>
+<script src="assets/beachbuds-6.4/app-6.7.js?rev=20261126" defer></script>
 </body>
 </html>
