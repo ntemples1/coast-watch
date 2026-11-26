@@ -23,7 +23,7 @@ jobs:
           node-version: 20
       - name: Check Branksome and alert on change
         env:
-          NTFY_TOPIC: ${{ vars.NTFY_TOPIC }}
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC || 'beachbuds-branksome-k7q2' }}
         run: node alerts/check-branksome.mjs
       - name: Save state if it changed
         run: |
