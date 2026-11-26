@@ -1,0 +1,17 @@
+{
+  "name": "Coast Watch: Branksome, Bournemouth and Poole",
+  "short_name": "Coast Watch",
+  "description": "Live Wessex Water storm overflow reports for local beaches, with rain and tide context.",
+  "lang": "en-GB",
+  "start_url": "./?source=homescreen",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#08191f",
+  "theme_color": "#08191f",
+  "icons": [
+    {"src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coast Watch | Branksome, Bournemouth and Poole sewage overflow reports</title>
+<meta name="description" content="Live Wessex Water storm overflow reports for Branksome Chine, Bournemouth and Poole beaches, with 24-hour history, rain, wind and tide context.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#08191f">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Coast Watch">
+<meta property="og:title" content="Coast Watch | Branksome, Bournemouth and Poole">
+<meta property="og:description" content="Live sewage overflow reports for local beaches, with rain and tide context. Check before you swim.">
+<meta property="og:image" content="assets/icons/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Coast Watch">
+<link rel="preload" href="assets/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://services.arcgis.com" crossorigin>
+<link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css?v=6.1">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="#view=home" aria-label="Coast Watch home">
+      <svg viewBox="0 0 36 36" aria-hidden="true"><path d="M3 10c5-7 10 7 15 0s10 7 15 0M3 18c5-7 10 7 15 0s10 7 15 0M3 26c5-7 10 7 15 0s10 7 15 0"/></svg>
+      <span>coast<b>watch</b><small>Bournemouth · Branksome · Poole</small></span>
+    </a>
+    <div class="top-actions">
+      <button id="motion-toggle" class="btn ghost small" type="button" aria-pressed="false">Pause motion</button>
+      <button id="refresh" class="btn ghost small" type="button"><span class="spin" aria-hidden="true">↻</span> Refresh</button>
+    </div>
+  </div>
+  <nav class="wrap tabs" aria-label="Dashboard views">
+    <a href="#view=home" data-view="home">Branksome</a>
+    <a href="#view=beaches" data-view="beaches">Beaches</a>
+    <a href="#view=history" data-view="history">History</a>
+    <a href="#view=conditions" data-view="conditions">Weather &amp; tides</a>
+    <a href="#view=map" data-view="map">Map &amp; places</a>
+    <a href="#view=alerts" data-view="alerts">All alerts <span id="nav-alert-count" class="nav-count" hidden></span></a>
+  </nav>
+</header>
+
+<main id="main" class="wrap" tabindex="-1">
+  <div class="live-line" role="status">
+    <span id="live-dot" class="live-dot" aria-hidden="true"></span>
+    <span><b id="live-label">Connecting to Wessex Water</b> <span id="live-detail" class="muted">Fetching the latest reports…</span></span>
+  </div>
+  <div class="banner" id="banner" role="alert" hidden></div>
+
+  <!-- ===== Branksome (home) ===== -->
+  <section id="view-home" class="view" data-view-panel="home" aria-labelledby="home-title">
+    <article id="home-hero" class="hero" data-kind="unknown">
+      <div class="sea-scene" aria-hidden="true"><div class="sea-orb"></div><svg class="sea-waves" viewBox="0 0 1400 300" preserveAspectRatio="none"><path d="M-300 140 Q-125 80 50 140 T400 140 T750 140 T1100 140 T1450 140 T1800 140 V400 H-300Z"/><path d="M-300 180 Q-125 120 50 180 T400 180 T750 180 T1100 180 T1450 180 T1800 180 V400 H-300Z"/><path d="M-300 220 Q-125 160 50 220 T400 220 T750 220 T1100 220 T1450 220 T1800 220 V400 H-300Z"/></svg></div>
+      <p class="eyebrow"><span aria-hidden="true">★</span> Your first port of call</p>
+      <h1 id="home-title">Branksome <em>Chine.</em></h1>
+      <p class="metric-label">Latest monitor status</p>
+      <div id="home-status" class="home-status"><span class="badge unknown"><i class="dot unknown"></i>Checking</span></div>
+      <p id="home-summary" class="home-summary">Getting Branksome’s latest overflow report.</p>
+      <p id="home-nearby" class="home-nearby" hidden></p>
+      <div class="tl-wrap" id="home-strip"></div>
+      <dl class="metrics">
+        <div><dt>Last reported stop</dt><dd id="home-stop">…</dd><span id="home-stop-date" class="muted"></span></div>
+        <div><dt>Last event lasted</dt><dd id="home-duration">…</dd><span class="muted">Latest event, not a daily total</span></div>
+        <div><dt>Rain, last 24h</dt><dd id="home-rain">…</dd><span id="home-rain-note" class="muted">Model estimate at Branksome</span></div>
+        <div><dt>Wessex updated</dt><dd id="home-updated">…</dd><span id="home-updated-date" class="muted"></span></div>
+      </dl>
+      <a class="home-moon" id="home-moon" href="#view=conditions">
+        <span id="home-moon-face" class="home-moon-face" aria-hidden="true"></span>
+        <span id="home-moon-label">Moon phase</span>
+      </a>
+      <div class="actions">
+        <a class="btn primary" href="#view=history&amp;place=WXW00865">Branksome’s 24h history</a>
+        <a class="btn" href="#view=map&amp;place=WXW00865">Find on map</a>
+        <button class="btn star-btn" type="button" data-save-beach="branksome" aria-pressed="false">☆ Save</button>
+      </div>
+      <p class="hero-safety">Overflow reports do not confirm safe swimming. <a href="https://www.gov.uk/quality-of-local-bathing-water" target="_blank" rel="noopener">Check bathing water advice ↗</a></p>
+    </article>
+
+    <section class="area card" aria-labelledby="area-title">
+      <div class="area-head">
+        <div><p class="eyebrow">Whole local coast and harbour</p><h2 id="area-title">Checking all local outfalls…</h2></div>
+      </div>
+      <p id="area-sub" class="muted"></p>
+      <div class="counts" role="group" aria-label="Show outfalls by status">
+        <a class="count active" href="#view=map&amp;status=active"><b id="n-active">…</b><span>Discharging now</span></a>
+        <a class="count recent" href="#view=map&amp;status=recent"><b id="n-recent">…</b><span>Ended in last 24h</span></a>
+        <a class="count quiet" href="#view=map&amp;status=quiet"><b id="n-quiet">…</b><span>Not discharging</span></a>
+        <a class="count unknown" href="#view=map&amp;status=unknown"><b id="n-unknown">…</b><span>Unavailable</span></a>
+      </div>
+    </section>
+
+    <section class="rain-context card" aria-labelledby="rain-title">
+      <h2 id="rain-title" class="h3">Rain context</h2>
+      <p id="rain-context" class="muted">Loading rainfall…</p>
+      <div id="rain-mini" class="rain-mini"></div>
+      <p class="fine">Storm overflows mostly operate during or after heavy rain. Rain totals are model estimates and are shown for context only. They do not tell you whether the water is safe.</p>
+    </section>
+
+    <section aria-labelledby="mine-title">
+      <div class="section-head"><h2 id="mine-title">Your beaches</h2><a href="#view=beaches" class="link">All beaches →</a></div>
+      <div id="my-beaches" class="cards"></div>
+    </section>
+  </section>
+
+  <!-- ===== Beaches ===== -->
+  <section id="view-beaches" class="view" data-view-panel="beaches" hidden aria-labelledby="beaches-title">
+    <div class="section-head"><h2 id="beaches-title">Beaches</h2></div>
+    <p class="muted">Each beach shows the worst status of its nearest monitored outfalls. Outfall locations do not show how far pollution spreads. Tap ☆ to save a beach to your home screen list.</p>
+    <div id="beach-list" class="cards"></div>
+  </section>
+
+  <!-- ===== History ===== -->
+  <section id="view-history" class="view" data-view-panel="history" hidden aria-labelledby="history-title">
+    <div class="card">
+      <div class="history-top">
+        <div><p class="eyebrow">Selected outfall</p><h2 id="history-title">Branksome Chine</h2></div>
+        <label class="field">Choose a place<select id="history-select"></select></label>
+      </div>
+      <div class="actions">
+        <button id="history-save" class="btn small star-btn" type="button" aria-pressed="false">☆ Save place</button>
+        <button id="history-copy" class="btn small" type="button">Copy link</button>
+        <button id="history-csv" class="btn small" type="button">Download CSV</button>
+        <a id="history-source" class="btn small ghost" target="_blank" rel="noopener" href="https://www.wessexwater.co.uk/coast-and-rivers-watch-map">Source record ↗</a>
+      </div>
+      <div id="history-live" class="history-live"></div>
+      <h3>Last 24 hours: discharges and rain</h3>
+      <p class="fine">Both strips share one time axis, so you can see whether reported discharges lined up with rain. Rain is a model estimate at Branksome, not a measurement at this outfall.</p>
+      <div id="history-chart" class="history-chart"></div>
+      <div id="history-events"></div>
+      <p id="history-checked" class="fine"></p>
+    </div>
+  </section>
+
+  <!-- ===== Weather & tides ===== -->
+  <section id="view-conditions" class="view" data-view-panel="conditions" hidden aria-labelledby="conditions-title">
+    <div class="section-head">
+      <div><p class="eyebrow">Branksome · weather and sea</p><h2 id="conditions-title">The bigger picture</h2></div>
+      <button id="conditions-refresh" class="btn small" type="button">Refresh conditions ↻</button>
+    </div>
+    <p class="muted">Rain, wind and tides give context alongside the overflow reports. These forecasts do not measure bacteria or predict where pollution will travel.</p>
+    <div class="cond-grid">
+      <article class="card cond"><p class="metric-label">Rain · last 24 complete hours</p><strong id="rain-24">…</strong><p class="fine">Model estimate, rain plus showers</p>
+        <dl><div><dt>Last 48 hours</dt><dd id="rain-48">…</dd></div><div><dt>Next 12 hours forecast</dt><dd id="rain-next">…</dd></div></dl></article>
+      <article class="card cond"><p class="metric-label">Wind now · model</p><strong id="wind-speed">…</strong><p class="fine">Direction the wind comes from</p>
+        <dl><div><dt>Gusts</dt><dd id="wind-gust">…</dd></div><div><dt>Air temperature</dt><dd id="air-temp">…</dd></div></dl></article>
+      <article class="card cond"><p class="metric-label">Sea level · including tides</p><strong id="sea-trend">…</strong><p class="fine" id="sea-level">…</p>
+        <dl><div><dt>Waves offshore</dt><dd id="wave-height">…</dd></div><div><dt>Sea surface temperature</dt><dd id="sea-temp">…</dd></div></dl></article>
+      <article class="card cond"><p class="metric-label">Daylight · today, UK time</p>
+        <dl class="sun"><div><dt>Sunrise</dt><dd id="sunrise">…</dd></div><div><dt>Sunset</dt><dd id="sunset">…</dd></div></dl><p id="daylight-left" class="fine">…</p></article>
+    </div>
+    <article class="card">
+      <h3>Rain by hour: last 48 hours and next 12</h3>
+      <div id="rain-chart" class="rain-chart">Loading…</div>
+      <p class="fine">Bars are hourly model rain plus showers at Branksome. The line marks now.</p>
+    </article>
+    <article class="card">
+      <h3>Next 24 hours: model sea level</h3>
+      <p class="fine">Includes tides and weather effects. Heights are relative to global mean sea level, not chart datum.</p>
+      <div id="tide-curve" class="tide-curve">Loading sea-level forecast…</div>
+      <dl class="tide-events"><div><dt>Next model high point</dt><dd id="model-high">…</dd></div><div><dt>Next model low point</dt><dd id="model-low">…</dd></div><div><dt>Offshore wave period</dt><dd id="wave-period">…</dd></div></dl>
+      <p class="fine">High and low points are approximate hourly model peaks, not official tide times. The offshore grid cannot resolve every beach or harbour feature. This model is not for navigation. For tide times use <a href="https://www.phc.co.uk/safety/vts/tides/" target="_blank" rel="noopener">Poole Harbour Commissioners’ official tide tables ↗</a>.</p>
+      <p id="weather-updated" class="fine"></p><p id="marine-updated" class="fine"></p>
+      <p class="fine">Recent rain uses archived model estimates for complete hours. It is not an observed catchment total. Weather and sea data refresh every 30 minutes while open. Sources: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> weather models and <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener">marine models</a> (including Météo-France and Copernicus Marine), <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Waves are offshore estimates, not surf at the beach.</p>
+      <a class="btn small" href="https://www.phc.co.uk/safety/vts/tides/" target="_blank" rel="noopener">Official local tide tables ↗</a>
+    </article>
+    <article class="card moon-card" id="moon-card" aria-labelledby="moon-title">
+      <h3 id="moon-title">Moon and tides</h3>
+      <div class="moon-block">
+        <div id="moon-face" class="moon-face"></div>
+        <div class="moon-copy">
+          <p class="metric-label">Phase now · UK time</p>
+          <strong id="moon-phase">…</strong>
+          <dl class="moon-facts">
+            <div><dt>Lit</dt><dd id="moon-lit">…</dd></div>
+            <div><dt>Age this cycle</dt><dd id="moon-age">…</dd></div>
+            <div><dt>Next full moon</dt><dd id="moon-full">…</dd></div>
+            <div><dt>Next new moon</dt><dd id="moon-new">…</dd></div>
+          </dl>
+          <p id="moon-tide-note" class="fine"></p>
+        </div>
+      </div>
+      <div class="moon-cycle">
+        <div id="moon-cycle-bar" class="moon-cycle-bar" aria-hidden="true"></div>
+        <div id="moon-cycle-steps" class="moon-cycle-steps"></div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ===== Map & places ===== -->
+  <section id="view-map" class="view" data-view-panel="map" hidden aria-labelledby="map-title">
+    <h2 id="map-title" class="visually-hidden">Map and places</h2>
+    <div class="map-layout">
+      <div class="map-col">
+        <div id="map" role="region" aria-label="Map of monitored outfalls and beaches"><p class="map-msg">Loading the map…</p></div>
+        <div class="map-legend" aria-hidden="true"><span><i class="dot active"></i>Discharging now</span><span><i class="dot recent"></i>Ended in last 24h</span><span><i class="dot quiet"></i>Not discharging</span><span><i class="dot unknown"></i>Offline or unavailable</span><span><i class="dot beach"></i>Beach (same colours)</span></div>
+        <p class="fine">Circles are outfalls and squares are beaches. Colours match the status key. Markers show monitor status at that place, not how far pollution spreads.</p>
+      </div>
+      <div class="list-col">
+        <div class="tools card">
+          <label class="visually-hidden" for="search">Search outfalls</label>
+          <input id="search" type="search" placeholder="Beach, outfall, ID or water" autocomplete="off">
+          <div class="chips" role="group" aria-label="Status filter">
+            <button class="chip" data-filter="all" aria-pressed="true" type="button">All</button>
+            <button class="chip" data-filter="active" aria-pressed="false" type="button">Discharging</button>
+            <button class="chip" data-filter="recent" aria-pressed="false" type="button">Ended 24h</button>
+            <button class="chip" data-filter="quiet" aria-pressed="false" type="button">Not discharging</button>
+            <button class="chip" data-filter="unknown" aria-pressed="false" type="button">Unavailable</button>
+          </div>
+          <div class="tool-row">
+            <label class="visually-hidden" for="area">Area</label>
+            <select id="area"><option value="all">All local waters</option><option value="bournemouth">Bournemouth</option><option value="branksome">Branksome</option><option value="poole">Poole and harbour</option></select>
+            <button id="saved-only" class="chip" aria-pressed="false" type="button">★ Saved</button>
+            <button id="csv" class="btn small" type="button">Download CSV</button>
+          </div>
+          <p class="fine" id="result-count" role="status"></p>
+        </div>
+        <div id="outfall-list" class="rows"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== All alerts ===== -->
+  <section id="view-alerts" class="view" data-view-panel="alerts" hidden aria-labelledby="alerts-title">
+    <div class="section-head">
+      <div><p class="eyebrow">Latest report at each outfall</p><h2 id="alerts-title">Discharge alerts</h2></div>
+      <label class="field">Show reported stops<select id="alert-period"><option value="24">Last 24 hours</option><option value="72" selected>Last 72 hours</option><option value="168">Last 7 days</option><option value="all">All latest reports</option></select></label>
+    </div>
+    <p id="alerts-summary" class="alerts-summary" role="status">Checking the local outfalls…</p>
+    <p class="fine">Branksome stays pinned. Discharging and unavailable reports are always shown. Amber marks a reported completed discharge, not a water quality rating.</p>
+    <div id="alert-cards" class="cards"></div>
+    <aside class="card swim-note"><strong>Before you swim</strong><p>Time since a discharge is not a swimming safety test. Pollution can remain after a release stops, and reports can be delayed. This filter is a display window, not a safe waiting period.</p><a href="https://www.gov.uk/quality-of-local-bathing-water" target="_blank" rel="noopener">Check official bathing water advice ↗</a></aside>
+  </section>
+
+  <details class="card explain">
+    <summary>What these reports can and cannot tell you</summary>
+    <p><b>These are overflow monitor reports.</b> They show when a monitored overflow operates. They do not measure bacteria, discharge volume or how far it spreads. "Not discharging" does not mean the water is clean.</p>
+    <p><b>Updates take time.</b> Wessex says its map refreshes every 15 minutes and reports are normally available within an hour of a discharge starting. Missing, delayed, offline or inconsistent reports show as Unavailable, never as an all-clear.</p>
+    <p><b>History covers about 24 hours.</b> That is all Wessex publishes in its live event feed. Older dates come from each outfall’s latest event times.</p>
+    <p><b>Rain is context, not a verdict.</b> Overflows usually follow heavy rain, but dry weather does not make the water safe and rain does not prove a discharge.</p>
+    <p>Check the <a href="https://www.gov.uk/quality-of-local-bathing-water" target="_blank" rel="noopener">Environment Agency bathing water information ↗</a> and local beach notices before going in. <a href="https://www.wessexwater.co.uk/your-wastewater/coast-and-rivers-watch" target="_blank" rel="noopener">How Wessex’s monitors work ↗</a></p>
+  </details>
+</main>
+
+<footer class="wrap footer">
+  <p><b>coastwatch</b><br>Independent local dashboard. Not affiliated with Wessex Water. All times are UK time.</p>
+  <p>Overflow data: <a href="https://www.wessexwater.co.uk/coast-and-rivers-watch-map" target="_blank" rel="noopener">Wessex Water Coast and Rivers Watch</a> and <a href="https://www.streamwaterdata.co.uk/datasets/632885799ff946cd86200f07b7f175fb_0/explore" target="_blank" rel="noopener">Stream Water Data</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.</p>
+</footer>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<noscript><div class="noscript">JavaScript is needed to load live data. <a href="https://www.wessexwater.co.uk/coast-and-rivers-watch-map">Open Wessex Water’s map</a>.</div></noscript>
+<script src="assets/js/data.js?v=6.1" defer></script>
+<script src="assets/js/app.js?v=6.1" defer></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Python (tools/, tests/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node (if ever used)
+node_modules/
+npm-debug.log*
+
+# Local secrets and env files (the app needs none, keep it that way)
+.env
+.env.*
+
+# Logs and temp files
+*.log
+*.tmp
+tmp/
